@@ -10,6 +10,10 @@ function formatDate(value) {
   return Number.isNaN(date.getTime()) ? "Unknown date" : date.toLocaleString();
 }
 
+function formatProvider(value) {
+  return value === "nvidia_nim" ? "NVIDIA NIM" : value;
+}
+
 export default function AiUsageTab() {
   const [analytics, setAnalytics] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -98,7 +102,7 @@ export default function AiUsageTab() {
                 {providers.map((provider) => (
                   <tr key={provider.provider} className="border-b border-plum/10 last:border-0">
                     <td className="py-3 pr-4 font-semibold capitalize text-body-dark">
-                      {provider.provider}
+                      {formatProvider(provider.provider)}
                     </td>
                     <td className="py-3 pr-4">{formatNumber(provider.request_count)}</td>
                     <td className="py-3 pr-4">{formatNumber(provider.total_tokens)}</td>
@@ -130,7 +134,11 @@ export default function AiUsageTab() {
                 className="flex flex-col gap-1 py-3 text-sm sm:flex-row sm:items-center sm:justify-between"
               >
                 <span className="font-semibold text-rose-700">
-                  {[item.error_code || "UNKNOWN_ERROR", item.provider, item.model]
+                  {[
+                    item.error_code || "UNKNOWN_ERROR",
+                    item.provider ? formatProvider(item.provider) : null,
+                    item.model,
+                  ]
                     .filter(Boolean)
                     .join(" · ")}
                 </span>
