@@ -259,7 +259,7 @@ export default function GrammarMonitorTab() {
       ) : (
         <>
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[850px] text-left text-sm">
+            <table className="w-full min-w-212.5 text-left text-sm">
               <thead className="sticky top-0 bg-white text-xs uppercase text-muted-label">
                 <tr className="border-b border-plum/20">
                   <th className="p-3">Module</th>

@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import ErrorBoundary from "./components/ErrorBoundary";
 import CapacityGuardModal from "./components/CapacityGuardModal";
+import SeoManager from "./components/SeoManager";
 
 const LandingPage = lazy(() => import("./pages/LandingPage"));
 const WorkspaceLayout = lazy(() => import("./components/WorkspaceLayout"));
@@ -69,6 +70,7 @@ export default function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
+        <SeoManager />
         <CapacityGuardModal />
         <Routes>
           {/* Public Landing & Information */}
