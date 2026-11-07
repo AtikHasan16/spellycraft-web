@@ -392,6 +392,14 @@ CREATE POLICY "Grammar questions select policy"
   ON public.grammar_questions FOR SELECT TO anon, authenticated
   USING (true);
 
+CREATE POLICY "Grammar questions admin insert policy"
+  ON public.grammar_questions FOR INSERT TO authenticated
+  WITH CHECK (public.is_admin());
+
+CREATE POLICY "Grammar questions admin delete policy"
+  ON public.grammar_questions FOR DELETE TO authenticated
+  USING (public.is_admin());
+
 -- User Badges: User reads own badges; inserts own unlocked badges
 CREATE POLICY "User badges select policy"
   ON public.user_badges FOR SELECT TO authenticated
@@ -422,7 +430,11 @@ GRANT SELECT ON public.vocabularies TO anon;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.spelling_progress TO authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.flashcard_progress TO authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.grammar_progress TO authenticated;
+REVOKE INSERT ON public.grammar_questions FROM PUBLIC, anon, authenticated;
+REVOKE DELETE ON public.grammar_questions FROM PUBLIC, anon, authenticated;
 GRANT SELECT ON public.grammar_questions TO anon, authenticated;
+GRANT INSERT ON public.grammar_questions TO authenticated;
+GRANT DELETE ON public.grammar_questions TO authenticated;
 GRANT SELECT, INSERT ON public.user_badges TO authenticated;
 GRANT SELECT, INSERT ON public.audit_logs TO authenticated;
 GRANT SELECT, INSERT ON public.user_activity_logs TO authenticated;

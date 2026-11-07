@@ -13,11 +13,16 @@ ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
 CREATE INDEX IF NOT EXISTS idx_profiles_last_active_at ON public.profiles(last_active_at);
 
 REVOKE INSERT ON TABLE public.vocabularies FROM PUBLIC, anon, authenticated;
+REVOKE INSERT ON TABLE public.grammar_questions FROM PUBLIC, anon, authenticated;
+REVOKE DELETE ON TABLE public.grammar_questions FROM PUBLIC, anon, authenticated;
 REVOKE INSERT, UPDATE ON TABLE
   public.spelling_progress,
   public.flashcard_progress,
   public.grammar_progress
 FROM PUBLIC, anon, authenticated;
+GRANT SELECT ON TABLE public.grammar_questions TO anon, authenticated;
+GRANT INSERT ON TABLE public.grammar_questions TO authenticated;
+GRANT DELETE ON TABLE public.grammar_questions TO authenticated;
 REVOKE INSERT ON TABLE public.user_activity_logs FROM PUBLIC, anon, authenticated;
 
 REVOKE UPDATE ON TABLE public.profiles FROM PUBLIC, anon, authenticated;
@@ -126,6 +131,14 @@ CREATE POLICY "Admins delete vocabulary"
 CREATE POLICY "Public read grammar questions"
   ON public.grammar_questions FOR SELECT TO anon, authenticated
   USING (true);
+
+CREATE POLICY "Admins insert grammar questions"
+  ON public.grammar_questions FOR INSERT TO authenticated
+  WITH CHECK (public.is_admin());
+
+CREATE POLICY "Admins delete grammar questions"
+  ON public.grammar_questions FOR DELETE TO authenticated
+  USING (public.is_admin());
 
 CREATE POLICY "Read own or admin profiles"
   ON public.profiles FOR SELECT TO authenticated

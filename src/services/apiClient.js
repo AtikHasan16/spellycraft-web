@@ -9,7 +9,13 @@ import {
   deleteAuditLog,
   getAuditLogs,
 } from "./auditService";
-import { getGrammarQuestions, getGrammarStats } from "./grammarService";
+import {
+  bulkCreateGrammarQuestions,
+  deleteGrammarQuestion,
+  deleteGrammarQuestionGroup,
+  getGrammarQuestions,
+  getGrammarStats,
+} from "./grammarService";
 import {
   getFlashcardProgress,
   getSpellingProgress,
@@ -85,6 +91,8 @@ const apiClient = {
         return createVocabulary(body);
       case "/vocabulary/bulk":
         return bulkImportVocabulary(body);
+      case "/grammar/questions/bulk":
+        return bulkCreateGrammarQuestions(body.questions);
       default:
         throw new Error(`Unhandled POST endpoint: ${url}`);
     }
@@ -95,6 +103,12 @@ const apiClient = {
   },
 
   async delete(url, config = {}) {
+    if (url === "/grammar/questions") {
+      return deleteGrammarQuestionGroup(config.data?.module);
+    }
+    if (url.startsWith("/grammar/questions/")) {
+      return deleteGrammarQuestion(decodeURIComponent(url.slice("/grammar/questions/".length)));
+    }
     if (url === "/vocabulary/topic" || url.startsWith("/vocabulary/")) {
       return deleteVocabulary(url, config);
     }

@@ -117,8 +117,9 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
+            <Route path="vocab-monitor" element={<Navigate to="/workspace/upload-monitor" replace />} />
             <Route
-              path="vocab-monitor"
+              path="upload-monitor"
               element={
                 <ProtectedRoute requiredRole="admin">
                   <PageRoute component={VocabMonitorPage} />
