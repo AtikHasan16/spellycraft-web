@@ -7,6 +7,16 @@ import { useAuth } from "../context/AuthContext";
 import { speakWithMicrosoftTTS, stopAudioPlayback } from "../utils/speechTts";
 import { showErrorAlert } from "../utils/sweetalert";
 import { secureShuffle } from "../utils/cryptoRandom";
+import { supabase } from "../services/supabaseClient";
+import {
+  generateVocabularyDefinition,
+  generateVocabularyMeaning,
+} from "../services/aiService";
+import {
+  getMeaningField,
+  getVocabularyMeaning,
+  MEANING_LANGUAGES,
+} from "../utils/meaningLanguages";
 import {
   getFlashcardMasterySummary,
   getFlashcardMistakes,
@@ -32,15 +42,9 @@ import {
 // Corpus groups matching design
 const PARTS = ["All Active", "Listening Vocabs", "Uploaded", "Mistakes"];
 
-// Multi-language translation dictionary for common academic roots (Item 3)
-const LANGUAGE_TRANSLATIONS = {
-  bn: "বাংলা (Bengali)",
-  hi: "हिन्दी (Hindi)",
-  ur: "اردو (Urdu)",
-  ar: "العربية (Arabic)",
-  es: "Español (Spanish)",
-  fr: "Français (French)",
-};
+const LANGUAGE_TRANSLATIONS = Object.fromEntries(
+  MEANING_LANGUAGES.map(({ code, label }) => [code, label]),
+);
 
 export default function FlashcardPage() {
   const { user, isAdmin } = useAuth();
@@ -59,7 +63,8 @@ export default function FlashcardPage() {
   const [isSpeaking, setIsSpeaking] = useState(false);
 
   // Preferred meaning language
-  const [selectedLanguage, setSelectedLanguage] = useState("bn");
+  const [selectedLanguage, setSelectedLanguage] = useState("en");
+  const [generationInProgress, setGenerationInProgress] = useState(null);
 
   // Flashcard Answer Tracking (Item 2)
   // Per-session counters
@@ -85,6 +90,45 @@ export default function FlashcardPage() {
       isMountedRef.current = false;
     };
   }, []);
+
+  useEffect(() => {
+    let active = true;
+    async function loadPreferredLanguage() {
+      if (!user?.id) return;
+      try {
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("preferred_meaning_language")
+          .eq("id", user.id)
+          .maybeSingle();
+        if (!active) return;
+        if (error) {
+          console.warn("Could not load preferred meaning language:", error.message);
+          showErrorAlert(
+            "Language Preference Unavailable",
+            "The saved meaning language could not be loaded. Please check your Profile preferences.",
+          );
+          return;
+        }
+        const preferredLanguage = data?.preferred_meaning_language || "en";
+        if (MEANING_LANGUAGES.some((item) => item.code === preferredLanguage)) {
+          setSelectedLanguage(preferredLanguage);
+        }
+      } catch (error) {
+        if (!active) return;
+        console.warn("Could not load preferred meaning language:", error);
+        showErrorAlert(
+          "Language Preference Unavailable",
+          "The saved meaning language could not be loaded. Please check your Profile preferences.",
+        );
+      }
+    }
+
+    loadPreferredLanguage();
+    return () => {
+      active = false;
+    };
+  }, [user?.id]);
 
   useEffect(() => {
     try {
@@ -421,6 +465,41 @@ export default function FlashcardPage() {
   const activeWords = mistakesOnly ? mistakesList : words;
   const currentWord = activeWords[currentIndex] || null;
 
+  const handleGenerateContent = async (generationType) => {
+    if (!currentWord?.id || generationInProgress) return;
+    setGenerationInProgress({ id: currentWord.id, type: generationType });
+    try {
+      const generated = generationType === "meaning"
+        ? await generateVocabularyMeaning(currentWord.id, selectedLanguage)
+        : await generateVocabularyDefinition(currentWord.id);
+      const updates = generationType === "meaning"
+        ? { [getMeaningField(selectedLanguage)]: generated.meaning }
+        : { definition: generated.definition };
+      const applyUpdates = (word) =>
+        word.id === currentWord.id ? { ...word, ...updates } : word;
+      setWords((current) => current.map(applyUpdates));
+      setMistakesList((current) => current.map(applyUpdates));
+      setQuizQuestions((current) =>
+        current.map((question) => ({
+          ...question,
+          vocabulary: question.vocabulary?.id === currentWord.id
+            ? { ...question.vocabulary, ...updates }
+            : question.vocabulary,
+        })),
+      );
+    } catch (error) {
+      console.error(`Could not generate vocabulary ${generationType}:`, error);
+      showErrorAlert(
+        generationType === "meaning"
+          ? "Meaning Could Not Be Generated"
+          : "Definition Could Not Be Generated",
+        error.message || "Please try again later.",
+      );
+    } finally {
+      setGenerationInProgress(null);
+    }
+  };
+
   const persistFlashcardAttempt = useCallback(async (word, status, lastIndex, topicOverride) => {
     const topic = topicOverride || selectedGroup?.title || "Academic Word List: Sublist A";
     let updatedMastery;
@@ -615,7 +694,9 @@ export default function FlashcardPage() {
       const corpus = await fetchVocabularyCorpus({
         topic: quizTopic || undefined,
       });
-      const quizCorpus = corpus.filter((item) => item.word && item.banglaMeaning);
+      const quizCorpus = corpus.filter(
+        (item) => item.word && getVocabularyMeaning(item, selectedLanguage),
+      );
       if (quizCorpus.length === 0) {
         showErrorAlert("No Quiz Words Available", "This vocabulary set has no words with saved meanings.");
         return;
@@ -631,15 +712,16 @@ export default function FlashcardPage() {
           quizCorpus.filter((c) => c.word !== item.word)
         )
           .slice(0, 3)
-          .map((c) => c.banglaMeaning);
+          .map((c) => getVocabularyMeaning(c, selectedLanguage));
 
-        const options = secureShuffle([...distractors, item.banglaMeaning]);
+        const correctAnswer = getVocabularyMeaning(item, selectedLanguage);
+        const options = secureShuffle([...distractors, correctAnswer]);
 
         return {
           vocabulary: item,
           word: item.word,
           pos: item.pos,
-          correctAnswer: item.banglaMeaning,
+          correctAnswer,
           options,
         };
       });
@@ -916,20 +998,12 @@ export default function FlashcardPage() {
                   Card <span className="text-plum">{currentIndex + 1}</span> of {activeWords.length}
                 </span>
 
-                {/* Native Language Selector (Item 3) */}
+                {/* Language preference is managed from the Profile page. */}
                 <div className="flex items-center space-x-1.5 text-xs text-muted-label">
                   <HiLanguage className="w-4 h-4 text-plum" />
-                  <select
-                    value={selectedLanguage}
-                    onChange={(e) => setSelectedLanguage(e.target.value)}
-                    className="imlaa-input py-1 px-2 text-xs font-semibold rounded-lg"
-                  >
-                    {Object.entries(LANGUAGE_TRANSLATIONS).map(([code, name]) => (
-                      <option key={code} value={code}>
-                        {name}
-                      </option>
-                    ))}
-                  </select>
+                  <span className="font-semibold text-body-dark">
+                    {LANGUAGE_TRANSLATIONS[selectedLanguage] || "English"}
+                  </span>
                 </div>
               </div>
 
@@ -1018,9 +1092,50 @@ export default function FlashcardPage() {
                           Meaning ({LANGUAGE_TRANSLATIONS[selectedLanguage]})
                         </div>
                         <div className="text-xl font-bold text-body-dark">
-                          {currentWord.banglaMeaning}
+                          {getVocabularyMeaning(currentWord, selectedLanguage) ||
+                            `No ${LANGUAGE_TRANSLATIONS[selectedLanguage]} meaning saved yet.`}
                         </div>
                       </div>
+
+                      {selectedLanguage !== "en" && (
+                        <div>
+                          <div className="mb-1 text-xs font-bold uppercase tracking-wider text-muted-label">
+                            Definition (English)
+                          </div>
+                          <div className="text-sm leading-relaxed text-body-dark">
+                            {currentWord.definition || "No English definition generated yet."}
+                          </div>
+                        </div>
+                      )}
+
+                      {!["en", "bn"].includes(selectedLanguage) &&
+                        !getVocabularyMeaning(currentWord, selectedLanguage) && (
+                        <button
+                          type="button"
+                          onClick={() => handleGenerateContent("meaning")}
+                          disabled={generationInProgress?.id === currentWord.id}
+                          className="imlaa-btn-secondary min-h-11 w-full px-4 text-sm font-semibold text-plum disabled:cursor-wait disabled:opacity-60"
+                        >
+                          {generationInProgress?.id === currentWord.id &&
+                          generationInProgress.type === "meaning"
+                            ? "Generating..."
+                            : "Generate one-word meaning"}
+                        </button>
+                      )}
+
+                      {!currentWord.definition && (
+                        <button
+                          type="button"
+                          onClick={() => handleGenerateContent("definition")}
+                          disabled={generationInProgress?.id === currentWord.id}
+                          className="imlaa-btn-secondary min-h-11 w-full px-4 text-sm font-semibold text-plum disabled:cursor-wait disabled:opacity-60"
+                        >
+                          {generationInProgress?.id === currentWord.id &&
+                          generationInProgress.type === "definition"
+                            ? "Generating..."
+                            : "Generate definition"}
+                        </button>
+                      )}
 
                       {/* Synonyms */}
                       {currentWord.synonyms && currentWord.synonyms.length > 0 && (

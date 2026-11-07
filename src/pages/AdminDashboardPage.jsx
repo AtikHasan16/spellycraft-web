@@ -7,6 +7,7 @@ import { recordAuditLog } from "../services/auditService";
 import AuditLogTable from "../features/admin/AuditLogTable";
 import UserInspector from "../features/admin/UserInspector";
 import UserDirectory from "../features/admin/UserDirectory";
+import AiUsageTab from "../features/admin/AiUsageTab";
 import { useModalEffects } from "../hooks/useModalEffects";
 import {
   HiUsers,
@@ -24,6 +25,7 @@ import { exportAuditReportPDF } from "../utils/exportReportPdf";
 
 export default function AdminDashboardPage() {
   const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState("overview");
   const [auditStats, setAuditStats] = useState({
     totalRegistered: 0,
     approvedCount: 0,
@@ -287,6 +289,31 @@ export default function AdminDashboardPage() {
         </div>
       </div>
 
+      <nav aria-label="Admin dashboard sections" className="flex flex-wrap gap-2 border-b border-plum/15 pb-3">
+        {[
+          ["overview", "Overview"],
+          ["ai-usage", "AI Usage"],
+        ].map(([tab, label]) => (
+          <button
+            key={tab}
+            type="button"
+            aria-current={activeTab === tab ? "page" : undefined}
+            onClick={() => setActiveTab(tab)}
+            className={`min-h-11 rounded-xl px-4 text-sm font-semibold ${
+              activeTab === tab
+                ? "bg-plum text-white"
+                : "border border-plum/20 bg-white text-plum hover:bg-plum/5"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </nav>
+
+      {activeTab === "ai-usage" ? (
+        <AiUsageTab />
+      ) : (
+        <>
       {/* ==================================================== */}
       {/* 1. Live Overview Stats (Strict Platform Plum Family) */}
       {/* ==================================================== */}
@@ -376,6 +403,8 @@ export default function AdminDashboardPage() {
         onUpdateRole={handleUpdateRole}
         onDeleteUploadedWord={handleDeleteUploadedWord}
       />
+        </>
+      )}
     </div>
   );
 }

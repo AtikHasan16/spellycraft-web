@@ -27,6 +27,7 @@ import { getAvatarColor, getInitials } from "../utils/avatarColors";
 import { fetchUserBadges } from "../services/badgeService";
 import { exportStudyCertificatePDF } from "../utils/exportCertificatePdf";
 import BadgesModal from "../components/BadgesModal";
+import ProfilePreferences from "../components/profile/ProfilePreferences";
 import { toCamel } from "../services/dataMappers";
 
 export default function ProfilePage() {
@@ -379,6 +380,8 @@ export default function ProfilePage() {
             </div>
           </div>
         </div>
+
+        <ProfilePreferences userId={user?.id} />
 
         {/* Badges & Milestones Showcase Banner */}
         <div className="p-6 rounded-2xl border border-plum/20 bg-white flex flex-col sm:flex-row items-center justify-between gap-4 shadow-2xs">
