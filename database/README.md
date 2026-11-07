@@ -5,6 +5,7 @@
 - `migrations/20261030_phase_2_3_normalize_data_contract.sql` upgrades an existing canonical database to explicit vocabulary routing, UUID uploader/target-user IDs, and indexed vocabulary contracts.
 - `migrations/20261101_phase_2_4_atomic_business_rules.sql` installs authenticated RPCs for quota-checked vocabulary inserts, atomic progress/session writes, admin role changes, and audit-log deletion.
 - `migrations/20261102_phase_2_5_vocabulary_stats_rpc.sql` installs `get_vocabulary_topic_counts()` for efficient server-side grouping of vocabulary topics and counts.
+- `migrations/20261108_ai_vocabulary_generation.sql` adds the preferred meaning language, localized meaning columns, an English definition column, signed AI persistence, and admin-only token/error analytics. It also creates a one-time signing secret; configure its returned value as `AI_BACKEND_SIGNING_SECRET` only on the separate AI service host.
 
 For a new project, run `schema.sql`, apply the migrations in order, then run
 `security_policies.sql`. For an existing project, do not use `schema.sql` as a

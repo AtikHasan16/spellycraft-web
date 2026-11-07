@@ -60,11 +60,13 @@ SpellyCraft follows an intentional, minimalist design system tailored for academ
 - **React Icons** (filled Heroicons `hi2`)
 - **Supabase Auth and Postgres** (direct client access protected by RLS)
 
-### TTS service (`server`)
+### Backend services (`server`)
 - **Express.js** and **node-edge-tts** for server-side speech generation
-- Only exposes authenticated, rate-limited `POST /api/tts` and a health check.
+- TTS is an authenticated, rate-limited service. A separately launched AI
+  process provides authenticated vocabulary meaning/definition generation and
+  admin-only aggregated usage analytics.
 - Normal application data access uses Supabase PostgREST with RLS; there are no
-  Express CRUD or admin routes.
+  general-purpose CRUD routes or service-role credentials.
 
 ---
 
@@ -107,3 +109,8 @@ Configure frontend values from `.env.example` and the TTS service values from
 `../server/.env.example`. The service needs the Supabase anon key to verify
 sessions, not a service-role key. Public landing-page audio uses browser speech
 synthesis; authenticated workspace audio uses the TTS service.
+
+To enable AI vocabulary definitions, run `npm run dev:ai` from the backend
+directory, configure `VITE_AI_BACKEND_URL` in the frontend and the AI provider
+settings in the backend environment, and apply the AI migration described in
+[`database/README.md`](./database/README.md).
