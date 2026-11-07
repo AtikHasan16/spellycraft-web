@@ -15,6 +15,7 @@ import { parseDelimitedText } from "../utils/csvParser";
 import { escapeHtml } from "../utils/escapeHtml";
 import { extractErrorDetails } from "../utils/errorParser";
 import UploadGuideModal from "../components/UploadGuideModal";
+import GrammarQuestionBulkUpload from "../components/GrammarQuestionBulkUpload";
 
 export default function UploadStudyPage() {
   const { user } = useAuth();
@@ -34,6 +35,7 @@ export default function UploadStudyPage() {
   const [importResult, setImportResult] = useState(null);
   const [uploadError, setUploadError] = useState(null);
   const [isGuideOpen, setIsGuideOpen] = useState(false);
+  const [activeUploadTab, setActiveUploadTab] = useState("vocabulary");
 
   const fileInputRef = useRef(null);
 
@@ -246,20 +248,50 @@ export default function UploadStudyPage() {
             Upload to Study
           </h2>
           <p className="text-lg text-muted-label mt-1">
-            Bulk import vocabulary from Google Sheets, CSV, or TSV files.
+            Bulk import vocabulary and grammar multiple-choice questions.
           </p>
         </div>
 
+        {activeUploadTab === "vocabulary" && (
+          <button
+            type="button"
+            onClick={() => setIsGuideOpen(true)}
+            className="imlaa-btn-secondary py-2.5 px-4 text-sm font-bold flex items-center space-x-2 shrink-0 cursor-pointer self-start sm:self-auto"
+          >
+            <HiQuestionMarkCircle className="w-5 h-5 text-plum" />
+            <span>Upload Guide & Examples</span>
+          </button>
+        )}
+      </div>
+
+      <div aria-label="Study content upload type" className="flex flex-wrap gap-2">
         <button
           type="button"
-          onClick={() => setIsGuideOpen(true)}
-          className="imlaa-btn-secondary py-2.5 px-4 text-sm font-bold flex items-center space-x-2 shrink-0 cursor-pointer self-start sm:self-auto"
+          aria-pressed={activeUploadTab === "vocabulary"}
+          onClick={() => setActiveUploadTab("vocabulary")}
+          className={`imlaa-tab-btn min-h-11 px-5 py-2.5 ${activeUploadTab === "vocabulary" ? "active" : ""}`}
         >
-          <HiQuestionMarkCircle className="w-5 h-5 text-plum" />
-          <span>Upload Guide & Examples</span>
+          Vocabulary Upload
+        </button>
+        <button
+          type="button"
+          disabled={!isAdmin}
+          aria-pressed={activeUploadTab === "grammar"}
+          onClick={() => {
+            if (isAdmin) setActiveUploadTab("grammar");
+          }}
+          title={isAdmin ? undefined : "Grammar question uploads are restricted to administrators."}
+          className={`imlaa-tab-btn min-h-11 px-5 py-2.5 ${activeUploadTab === "grammar" ? "active" : ""} ${!isAdmin ? "cursor-not-allowed opacity-60" : ""}`}
+        >
+          {!isAdmin && <HiLockClosed className="mr-2 inline h-4 w-4" />}
+          Grammar MCQ Upload{!isAdmin && " (Admin only)"}
         </button>
       </div>
 
+      {isAdmin && activeUploadTab === "grammar" ? (
+        <GrammarQuestionBulkUpload />
+      ) : (
+        <>
       {/* ==================================================== */}
       {/* BULK IMPORT (TSV & CSV)                              */}
       {/* ==================================================== */}
@@ -730,6 +762,8 @@ export default function UploadStudyPage() {
         onClose={() => setIsGuideOpen(false)}
         onApplyExample={handleApplyExample}
       />
+        </>
+      )}
     </div>
   );
 }

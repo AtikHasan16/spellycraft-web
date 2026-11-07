@@ -295,6 +295,8 @@ DROP POLICY IF EXISTS "Authenticated insert audit logs" ON public.audit_logs;
 DROP POLICY IF EXISTS "Admins update audit logs" ON public.audit_logs;
 DROP POLICY IF EXISTS "Admins delete audit logs" ON public.audit_logs;
 DROP POLICY IF EXISTS "Public read grammar questions" ON public.grammar_questions;
+DROP POLICY IF EXISTS "Admins insert grammar questions" ON public.grammar_questions;
+DROP POLICY IF EXISTS "Admins delete grammar questions" ON public.grammar_questions;
 
 CREATE POLICY "Read shared and owned vocabulary"
   ON public.vocabularies FOR SELECT TO anon, authenticated
@@ -318,6 +320,20 @@ CREATE POLICY "Admins delete vocabulary"
 CREATE POLICY "Public read grammar questions"
   ON public.grammar_questions FOR SELECT TO anon, authenticated
   USING (true);
+
+CREATE POLICY "Admins insert grammar questions"
+  ON public.grammar_questions FOR INSERT TO authenticated
+  WITH CHECK (public.is_admin());
+
+CREATE POLICY "Admins delete grammar questions"
+  ON public.grammar_questions FOR DELETE TO authenticated
+  USING (public.is_admin());
+
+REVOKE INSERT ON TABLE public.grammar_questions FROM PUBLIC, anon, authenticated;
+REVOKE DELETE ON TABLE public.grammar_questions FROM PUBLIC, anon, authenticated;
+GRANT SELECT ON TABLE public.grammar_questions TO anon, authenticated;
+GRANT INSERT ON TABLE public.grammar_questions TO authenticated;
+GRANT DELETE ON TABLE public.grammar_questions TO authenticated;
 
 CREATE POLICY "Read own or admin profiles"
   ON public.profiles FOR SELECT TO authenticated
@@ -537,4 +553,3 @@ $$;
 
 REVOKE ALL ON FUNCTION public.admin_update_profile_role(UUID, TEXT) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.admin_update_profile_role(UUID, TEXT) TO authenticated;
-

@@ -77,8 +77,8 @@ export default function NavigationDock() {
       show: true,
     },
     {
-      to: "/workspace/vocab-monitor",
-      label: "Vocab Monitor",
+      to: "/workspace/upload-monitor",
+      label: "Upload Monitor",
       icon: HiFolder,
       show: isAdmin,
     },

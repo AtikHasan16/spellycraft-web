@@ -8,6 +8,7 @@ import {
   HiMagnifyingGlass,
   HiBookOpen,
   HiClock,
+  HiAcademicCap,
   HiChevronLeft,
   HiChevronRight,
 } from "react-icons/hi2";
@@ -16,10 +17,11 @@ import {
   showSuccessToast,
   showErrorAlert,
 } from "../utils/sweetalert";
+import GrammarMonitorTab from "../components/admin/GrammarMonitorTab";
 
 export default function VocabMonitorPage() {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState("topics"); // 'topics' | 'words' | 'logs'
+  const [activeTab, setActiveTab] = useState("topics"); // 'topics' | 'words' | 'logs' | 'grammar'
 
   // Data states
   const [stats, setStats] = useState(null);
@@ -202,14 +204,14 @@ export default function VocabMonitorPage() {
         <div>
           <div className="flex items-center space-x-3">
             <h2 className="text-3xl font-black text-body-dark tracking-tight">
-              Vocabulary Monitor & Audit
+              Upload Monitor & Audit
             </h2>
             <span className="imlaa-badge text-base py-1 px-3">
               {stats?.totalCount || 0} Total Words
             </span>
           </div>
           <p className="text-lg text-muted-label mt-1">
-            Manage added vocabulary cards, browse terms by topic, and inspect upload reports.
+            Monitor vocabulary and grammar uploads, browse content, and inspect upload reports.
           </p>
         </div>
       </div>
@@ -269,7 +271,7 @@ export default function VocabMonitorPage() {
       </div>
 
       {/* Tab Switcher */}
-      <div className="flex items-center space-x-2 bg-plum/5 p-1 rounded-xl border border-plum/20 self-start">
+      <div className="flex flex-wrap items-center gap-2 bg-plum/5 p-1 rounded-xl border border-plum/20 self-start">
         <button
           type="button"
           onClick={() => setActiveTab("topics")}
@@ -308,7 +310,21 @@ export default function VocabMonitorPage() {
           <HiClock className="w-5 h-5" />
           <span>Upload Audit Logs ({auditLogs.length})</span>
         </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("grammar")}
+          className={`min-h-11 px-4 py-2 rounded-lg text-base font-semibold transition-all cursor-pointer flex items-center space-x-2 ${
+            activeTab === "grammar"
+              ? "bg-plum text-white shadow-xs"
+              : "text-muted-label hover:text-body-dark"
+          }`}
+        >
+          <HiAcademicCap className="w-5 h-5" />
+          <span>Grammar Questions</span>
+        </button>
       </div>
+
+      {activeTab === "grammar" && <GrammarMonitorTab />}
 
       {/* TAB 1: TOPIC CARDS MANAGEMENT */}
       {activeTab === "topics" && (

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { lazy, Suspense, useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useNavigate, Link, useLocation } from "react-router";
 import { useAuth } from "../context/AuthContext";
 import apiClient from "../services/apiClient";
@@ -13,12 +13,10 @@ import { getDailyGrammarRule } from "../data/grammarLessonsData";
 import BadgesModal from "../components/BadgesModal";
 import OnboardingModal from "../components/OnboardingModal";
 import { SkeletonStat, SkeletonCorpusGrid } from "../components/Skeletons";
-import { SearchEmptyState } from "../components/EmptyState";
 import {
   HiBookOpen,
   HiPencilSquare,
   HiAcademicCap,
-  HiCloudArrowUp,
   HiCheckCircle,
   HiExclamationCircle,
   HiClock,
@@ -28,12 +26,12 @@ import {
   HiArrowRight,
   HiHeart,
   HiUser,
-  HiArrowTopRightOnSquare,
-  HiMagnifyingGlass,
   HiArrowDownTray,
   HiQuestionMarkCircle,
   HiLightBulb,
 } from "react-icons/hi2";
+
+const CorpusDirectory = lazy(() => import("../components/dashboard/CorpusDirectory"));
 
 /**
  * Candidate Learning Dashboard
@@ -72,7 +70,8 @@ export default function DashboardPage() {
 
   // Detailed Corpus Sets Progress
   const [corpusList, setCorpusList] = useState([]);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [shouldLoadCorpusDirectory, setShouldLoadCorpusDirectory] = useState(false);
+  const corpusDirectoryRef = useRef(null);
 
   // Badges & Onboarding Modals State
   const [userBadges, setUserBadges] = useState([]);
@@ -83,6 +82,27 @@ export default function DashboardPage() {
   const dailyGrammar = useMemo(() => getDailyGrammarRule(), []);
 
   const isMountedRef = useRef(true);
+
+  useEffect(() => {
+    const directoryElement = corpusDirectoryRef.current;
+    if (!directoryElement) return undefined;
+    if (!("IntersectionObserver" in window)) {
+      setShouldLoadCorpusDirectory(true);
+      return undefined;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setShouldLoadCorpusDirectory(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "300px 0px" },
+    );
+    observer.observe(directoryElement);
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     isMountedRef.current = true;
@@ -376,17 +396,6 @@ export default function DashboardPage() {
     const remMins = mins % 60;
     return remMins > 0 ? `${hrs}h ${remMins}m` : `${hrs} hrs`;
   };
-
-  const filteredCorpus = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase();
-    if (!q) return corpusList;
-    return corpusList.filter(
-      (item) =>
-        item.title.toLowerCase().includes(q) ||
-        item.category.toLowerCase().includes(q) ||
-        (item.uploaderName && item.uploaderName.toLowerCase().includes(q)),
-    );
-  }, [corpusList, searchQuery]);
 
   const todayFormatted = new Date().toLocaleDateString("en-US", {
     weekday: "long",
@@ -852,144 +861,36 @@ export default function DashboardPage() {
       </div>
 
       {/* ==================================================== */}
-      {/* 5. Corpus Progress Directory (With Real-time Search) */}
+      {/* 5. Corpus Progress Directory                         */}
       {/* ==================================================== */}
-      <div className="imlaa-card p-6 sm:p-8 space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-plum/15">
-          <div>
-            <div className="flex items-center space-x-2">
-              <h2 className="text-xl sm:text-2xl font-bold text-body-dark">
-                Corpus Sets Progress Directory
-              </h2>
-              <span className="imlaa-badge text-xs">{corpusList.length} Sets</span>
-            </div>
-            <p className="text-xs sm:text-sm text-muted-label mt-1">
-              Detailed breakdown of your curriculum and custom uploaded corpus sets.
-            </p>
-          </div>
-
-          <div className="flex items-center gap-2.5">
-            {/* Real-time search bar */}
-            <div className="relative">
-              <HiMagnifyingGlass className="w-4 h-4 text-muted-label absolute left-3 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search topics..."
-                aria-label="Search corpus topics"
-                className="imlaa-input pl-9 pr-3 py-1.5 text-xs sm:text-sm rounded-xl w-44 sm:w-56"
-              />
-            </div>
-
-            <button
-              type="button"
-              onClick={() => navigate("/workspace/upload")}
-              className="imlaa-btn-secondary py-2 px-3 text-xs sm:text-sm font-semibold space-x-1.5 min-h-11 self-start sm:self-auto shrink-0"
-            >
-              <HiCloudArrowUp className="w-4 h-4 text-plum" />
-              <span className="hidden sm:inline">Upload New</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Corpus Sets Grid or Skeletons / Empty State */}
-        {loading ? (
-          <SkeletonCorpusGrid count={6} />
-        ) : filteredCorpus.length === 0 ? (
-          searchQuery ? (
-            <SearchEmptyState
-              searchTerm={searchQuery}
-              onReset={() => setSearchQuery("")}
+      <div ref={corpusDirectoryRef}>
+        {shouldLoadCorpusDirectory ? (
+          <Suspense
+            fallback={
+              <section className="imlaa-card space-y-6 p-6 sm:p-8">
+                <h2 className="text-xl font-bold text-body-dark">Loading corpus directory...</h2>
+                <SkeletonCorpusGrid count={3} />
+              </section>
+            }
+          >
+            <CorpusDirectory
+              corpusList={corpusList}
+              loading={loading}
+              userName={user?.name}
+              onUpload={(action) => navigate(
+                action === "study" ? "/workspace/flashcard" : "/workspace/upload",
+              )}
             />
-          ) : (
-            <div className="text-center py-12 text-muted-label">
-              No corpus sets found. Upload a vocabulary set to get started!
-            </div>
-          )
+          </Suspense>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-            {filteredCorpus.map((item, idx) => (
-              <div
-                key={idx}
-                className="p-5 rounded-xl border border-plum/20 bg-plum/5 flex flex-col justify-between space-y-4 hover:shadow-sm transition"
-              >
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold uppercase tracking-wider text-muted-label">
-                      {item.category}
-                    </span>
-                    {item.status === "completed" ? (
-                      <span className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
-                        Completed
-                      </span>
-                    ) : item.status === "in-progress" ? (
-                      <span className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-plum/10 text-plum border border-plum/20">
-                        In Progress
-                      </span>
-                    ) : (
-                      <span className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-stone-200/80 text-stone-700 border border-stone-300">
-                        Not Started
-                      </span>
-                    )}
-                  </div>
-
-                  <h3 className="text-base sm:text-lg font-bold text-body-dark leading-snug">
-                    {item.title}
-                  </h3>
-
-                  {/* Uploader / Tag */}
-                  {item.category === "Uploaded" ? (
-                    <div className="inline-flex items-center space-x-1.5 px-2 py-0.5 rounded-md bg-white text-plum text-xs font-semibold border border-plum/15">
-                      <HiUser className="w-3.5 h-3.5 text-plum" />
-                      <span>Uploaded by {item.uploaderName || user?.name || "You"}</span>
-                    </div>
-                  ) : (
-                    <div className="inline-flex items-center space-x-1.5 px-2 py-0.5 rounded-md bg-white text-stone-700 text-xs font-semibold border border-stone-200">
-                      <HiAcademicCap className="w-3.5 h-3.5 text-plum" />
-                      <span>Curriculum Corpus</span>
-                    </div>
-                  )}
-                </div>
-
-                <div className="space-y-2 pt-2 border-t border-plum/10">
-                  <div className="flex items-center justify-between text-xs text-muted-label">
-                    <span>
-                      Progress ({item.masteredCount} / {item.wordsCount} words)
-                    </span>
-                    <span className="font-bold text-body-dark">{item.percent}%</span>
-                  </div>
-                  <div className="w-full bg-plum/15 rounded-full h-2 overflow-hidden">
-                    <div
-                      className="h-full rounded-full bg-plum transition-all duration-500"
-                      style={{ width: `${item.percent}%` }}
-                    />
-                  </div>
-
-                  <div className="pt-2 flex items-center justify-between">
-                    {item.mistakesCount > 0 ? (
-                      <span className="text-xs font-bold text-rose-600">
-                        {item.mistakesCount} Needs Review
-                      </span>
-                    ) : (
-                      <span className="text-xs text-muted-label">
-                        {item.wordsCount} Total terms
-                      </span>
-                    )}
-
-                    <button
-                      type="button"
-                      onClick={() => navigate("/workspace/flashcard")}
-                      className="imlaa-btn-secondary py-1.5 px-3 text-xs font-bold text-plum space-x-1 active:scale-95"
-                    >
-                      <span>Study</span>
-                      <HiArrowTopRightOnSquare className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+          <section
+            aria-label="Corpus sets progress directory"
+            className="imlaa-card space-y-4 p-6 sm:p-8"
+          >
+            <h2 className="text-xl font-bold text-body-dark">Corpus Sets Progress Directory</h2>
+            <p className="text-sm text-muted-label">The directory will load as you scroll to it.</p>
+            <SkeletonCorpusGrid count={3} />
+          </section>
         )}
       </div>
 
