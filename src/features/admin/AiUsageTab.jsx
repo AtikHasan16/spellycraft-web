@@ -72,7 +72,7 @@ export default function AiUsageTab() {
         ].map(([label, value]) => (
           <div key={label} className="imlaa-card space-y-2 border border-plum/20 p-5">
             <p className="text-xs font-bold uppercase tracking-wide text-muted-label">{label}</p>
-            <p className="break-words text-2xl font-black text-body-dark">{value}</p>
+            <p className="wrap-break-word text-2xl font-black text-body-dark">{value}</p>
           </div>
         ))}
       </div>
@@ -85,7 +85,7 @@ export default function AiUsageTab() {
           <p className="text-sm text-muted-label">No AI provider usage has been recorded.</p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[36rem] text-left text-sm">
+            <table className="w-full min-w-xl text-left text-sm">
               <thead className="border-b border-plum/15 text-xs uppercase text-muted-label">
                 <tr>
                   <th className="py-3 pr-4">Provider</th>
@@ -116,21 +116,23 @@ export default function AiUsageTab() {
           <h4 className="text-lg font-bold text-body-dark">Recent provider errors</h4>
           <p className="mt-1 text-sm text-muted-label">
             Error codes only; prompts, generated text, words, and raw console output are not stored.
+            {" "}HTTP 400 usually indicates an unsupported request, 401/403 a key or access issue,
+            and 404 a model or endpoint mismatch.
           </p>
         </div>
         {recentErrors.length === 0 ? (
           <p className="text-sm text-muted-label">No AI generation errors recorded.</p>
         ) : (
           <ul className="divide-y divide-plum/10">
-            {recentErrors.map((item) => (
+            {recentErrors.map((item, index) => (
               <li
-                key={`${item.request_id}:${item.error_code}:${item.created_at}`}
+                key={`${item.request_id}:${item.error_code}:${item.created_at}:${item.provider}:${item.model}:${index}`}
                 className="flex flex-col gap-1 py-3 text-sm sm:flex-row sm:items-center sm:justify-between"
               >
                 <span className="font-semibold text-rose-700">
-                  {item.error_code || "UNKNOWN_ERROR"}
-                  {item.provider ? ` · ${item.provider}` : ""}
-                  {item.model ? ` · ${item.model}` : ""}
+                  {[item.error_code || "UNKNOWN_ERROR", item.provider, item.model]
+                    .filter(Boolean)
+                    .join(" · ")}
                 </span>
                 <time className="text-muted-label" dateTime={item.created_at}>
                   {formatDate(item.created_at)}
