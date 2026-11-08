@@ -281,7 +281,7 @@ export default function AdminDashboardPage() {
           <button
             type="button"
             onClick={handleExportPDF}
-            className="imlaa-btn-primary py-2 sm:py-2.5 px-4 sm:px-5 text-xs sm:text-base space-x-1.5 shadow-sm min-h-11"
+            className="imlaa-btn-primary py-2 sm:py-2.5 px-2 sm:px-4 text-xs sm:text-base space-x-1.5 shadow-sm min-h-11"
           >
             <HiArrowDownTray className="w-4 h-4 sm:w-5 sm:h-5" />
             <span>Export Report (PDF)</span>

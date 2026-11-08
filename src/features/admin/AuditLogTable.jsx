@@ -1,14 +1,9 @@
 import { useState, useEffect } from "react";
-import {
-  HiTrash,
-  HiChevronLeft,
-  HiChevronRight,
-  HiArrowDownTray,
-} from "react-icons/hi2";
+import { HiTrash, HiChevronLeft, HiChevronRight, HiArrowDownTray } from "react-icons/hi2";
 
 export default function AuditLogTable({ logs = [], onClear, onDelete }) {
   const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 15;
+  const pageSize = 5;
 
   const totalPages = Math.max(1, Math.ceil(logs.length / pageSize));
 
@@ -19,10 +14,7 @@ export default function AuditLogTable({ logs = [], onClear, onDelete }) {
     }
   }, [logs.length, totalPages, currentPage]);
 
-  const displayedLogs = logs.slice(
-    (currentPage - 1) * pageSize,
-    currentPage * pageSize,
-  );
+  const displayedLogs = logs.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   const handleExportJson = () => {
     const exportData = {
@@ -144,8 +136,7 @@ export default function AuditLogTable({ logs = [], onClear, onDelete }) {
                 <strong className="text-body-dark">
                   {Math.min(currentPage * pageSize, logs.length)}
                 </strong>{" "}
-                of <strong className="text-body-dark">{logs.length}</strong>{" "}
-                records
+                of <strong className="text-body-dark">{logs.length}</strong> records
               </span>
 
               <div className="flex items-center space-x-2">
@@ -165,9 +156,7 @@ export default function AuditLogTable({ logs = [], onClear, onDelete }) {
 
                 <button
                   type="button"
-                  onClick={() =>
-                    setCurrentPage((p) => Math.min(totalPages, p + 1))
-                  }
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                   disabled={currentPage === totalPages}
                   className="min-h-11 px-3.5 py-2 rounded-xl border border-plum/20 text-body-dark hover:bg-plum/5 disabled:opacity-40 disabled:cursor-not-allowed flex items-center space-x-1 cursor-pointer"
                 >
