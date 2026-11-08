@@ -166,7 +166,7 @@ export default function UserDirectory({
           </button>
         </div>
 
-        <div className="relative min-w-[260px]">
+        <div className="relative min-w-65">
           <HiMagnifyingGlass className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-label" />
           <input
             type="text"
