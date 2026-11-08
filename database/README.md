@@ -7,6 +7,7 @@
 - `migrations/20261102_phase_2_5_vocabulary_stats_rpc.sql` installs `get_vocabulary_topic_counts()` for efficient server-side grouping of vocabulary topics and counts.
 - `migrations/20261108_ai_vocabulary_generation.sql` adds the preferred meaning language, localized meaning columns, an English definition column, signed AI persistence, and admin-only token/error analytics. It also creates a one-time signing secret; configure its returned value as `AI_BACKEND_SIGNING_SECRET` only on the trusted AI backend.
 - `migrations/20261108_add_nvidia_nim_ai_provider.sql` allows the NVIDIA NIM provider identifier in AI usage analytics; apply it after the AI vocabulary generation migration.
+- `migrations/20261108_clear_ai_usage_errors.sql` adds the admin-only RPC used by the AI Usage tab to permanently clear failed-attempt logs while preserving successful usage records and vocabulary.
 
 For a new project, run `schema.sql`, apply the migrations in order, then run
 `security_policies.sql`. For an existing project, do not use `schema.sql` as a

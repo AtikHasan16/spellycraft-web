@@ -76,3 +76,17 @@ export async function getAiUsageAnalytics() {
   }
   return payload.data;
 }
+
+export async function clearAiUsageErrors() {
+  const { data, error } = await supabase.rpc("clear_ai_usage_errors");
+  if (error) {
+    const clearError = new Error(
+      error.code === "42501"
+        ? "Administrator access is required to clear AI error logs."
+        : "AI error logs could not be cleared.",
+    );
+    clearError.code = error.code || "AI_ERROR_LOG_CLEAR_FAILED";
+    throw clearError;
+  }
+  return Number(data) || 0;
+}
