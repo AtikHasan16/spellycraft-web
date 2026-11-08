@@ -633,6 +633,7 @@ export default function LandingPage() {
                   <div className="relative">
                     <input
                       type="password"
+                      autoComplete={authMode === "signin" ? "current-password" : "new-password"}
                       placeholder="••••••••"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
@@ -751,6 +752,7 @@ export default function LandingPage() {
                     <div className="relative">
                       <input
                         type="password"
+                        autoComplete="new-password"
                         placeholder="••••••••"
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
@@ -783,6 +785,7 @@ export default function LandingPage() {
                     <div className="relative">
                       <input
                         type="password"
+                        autoComplete="new-password"
                         placeholder="••••••••"
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}

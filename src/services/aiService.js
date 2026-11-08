@@ -1,6 +1,9 @@
 import { supabase } from "./supabaseClient";
 import { invalidateVocabularyCache } from "./queryCache";
 
+const GENERATION_TIMEOUT_MS = 45_000;
+const ANALYTICS_TIMEOUT_MS = 15_000;
+
 function getAiServiceUrl() {
   const configuredUrl = import.meta.env?.VITE_AI_BACKEND_URL?.trim();
   if (!configuredUrl) {
@@ -17,16 +20,39 @@ async function getAccessToken() {
   return token;
 }
 
+async function fetchWithTimeout(url, options, timeoutMs, operation) {
+  try {
+    return await fetch(url, {
+      ...options,
+      signal: AbortSignal.timeout(timeoutMs),
+    });
+  } catch (error) {
+    if (error?.name === "TimeoutError" || error?.name === "AbortError") {
+      throw new Error(
+        `${operation} timed out after ${Math.round(timeoutMs / 1000)} seconds. Check that the Render backend is reachable, then try again.`,
+        { cause: error },
+      );
+    }
+    if (error instanceof TypeError) {
+      throw new Error(
+        "Could not connect to the AI backend. Check VITE_AI_BACKEND_URL, Render availability, and allowed CORS origins.",
+        { cause: error },
+      );
+    }
+    throw error;
+  }
+}
+
 async function postAuthenticated(path, body) {
   const [baseUrl, token] = await Promise.all([getAiServiceUrl(), getAccessToken()]);
-  const response = await fetch(`${baseUrl}${path}`, {
+  const response = await fetchWithTimeout(`${baseUrl}${path}`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify(body),
-  });
+  }, GENERATION_TIMEOUT_MS, "AI generation");
   const payload = await response.json().catch(() => null);
   if (!response.ok || !payload?.success) {
     const error = new Error(
@@ -61,9 +87,9 @@ export function generateVocabularyDefinition(vocabularyId) {
 export async function getAiUsageAnalytics() {
   const baseUrl = getAiServiceUrl();
   const token = await getAccessToken();
-  const response = await fetch(`${baseUrl}/api/admin/ai-usage`, {
+  const response = await fetchWithTimeout(`${baseUrl}/api/admin/ai-usage`, {
     headers: { Authorization: `Bearer ${token}` },
-  });
+  }, ANALYTICS_TIMEOUT_MS, "AI analytics request");
   const payload = await response.json().catch(() => null);
   if (!response.ok || !payload?.success) {
     const error = new Error(
@@ -72,13 +98,30 @@ export async function getAiUsageAnalytics() {
         : "AI analytics could not be loaded.",
     );
     error.code = payload?.error || "AI_ANALYTICS_UNAVAILABLE";
+    error.status = response.status;
     throw error;
   }
-  return payload.data;
+  const data = payload.data;
+  if (
+    !data ||
+    typeof data !== "object" ||
+    !data.today ||
+    !Array.isArray(data.providers) ||
+    !Array.isArray(data.recentErrors)
+  ) {
+    const error = new Error(
+      "The AI backend returned incomplete analytics. Confirm the AI database migration is applied and the backend is up to date.",
+    );
+    error.code = "AI_ANALYTICS_RESPONSE_INVALID";
+    throw error;
+  }
+  return data;
 }
 
 export async function clearAiUsageErrors() {
-  const { data, error } = await supabase.rpc("clear_ai_usage_errors");
+  const { data, error } = await supabase
+    .rpc("clear_ai_usage_errors")
+    .abortSignal(AbortSignal.timeout(ANALYTICS_TIMEOUT_MS));
   if (error) {
     const clearError = new Error(
       error.code === "42501"
