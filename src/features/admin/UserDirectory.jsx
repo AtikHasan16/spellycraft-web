@@ -19,7 +19,7 @@ export default function UserDirectory({
   const [searchQuery, setSearchQuery] = useState("");
   const [showPermissionGuide, setShowPermissionGuide] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 15;
+  const pageSize = 5;
 
   const normalizedQuery = searchQuery.toLowerCase().trim();
   const filteredUsers = users.filter((user) => {
@@ -65,14 +65,12 @@ export default function UserDirectory({
               className="inline-flex items-center space-x-1 text-xs font-bold text-plum hover:underline cursor-pointer"
             >
               <HiInformationCircle className="w-4 h-4" />
-              <span>
-                {showPermissionGuide ? "Hide Tier Guide" : "View Tier Guide"}
-              </span>
+              <span>{showPermissionGuide ? "Hide Tier Guide" : "View Tier Guide"}</span>
             </button>
           </div>
           <p className="text-base text-muted-label mt-0.5">
-            Full directory of registered users with role assignments and
-            privilege controls.
+            Full directory of registered users with role assignments and privilege
+            controls.
           </p>
         </div>
         <span className="imlaa-badge text-base">
@@ -101,9 +99,7 @@ export default function UserDirectory({
                 <span className="font-bold text-plum uppercase text-xs">
                   General Member
                 </span>
-                <span className="imlaa-badge text-[11px] py-0.5 px-2">
-                  Free
-                </span>
+                <span className="imlaa-badge text-[11px] py-0.5 px-2">Free</span>
               </div>
               <ul className="text-muted-label space-y-1.5 list-disc list-inside">
                 <li>Full Flashcards & Spelling drills</li>
@@ -196,10 +192,7 @@ export default function UserDirectory({
           <tbody className="divide-y divide-plum/10">
             {displayedUsers.length === 0 ? (
               <tr>
-                <td
-                  colSpan={5}
-                  className="py-8 text-center text-muted-label text-base"
-                >
+                <td colSpan={5} className="py-8 text-center text-muted-label text-base">
                   No registered candidates match your search filters.
                 </td>
               </tr>
@@ -281,11 +274,7 @@ export default function UserDirectory({
                       <select
                         value={user.role === "admin" ? "admin" : "general"}
                         onChange={(event) =>
-                          onUpdateRole(
-                            user.id,
-                            user.name,
-                            event.target.value,
-                          )
+                          onUpdateRole(user.id, user.name, event.target.value)
                         }
                         className="imlaa-input text-xs py-1.5 px-3 bg-white font-semibold border-plum/25 text-body-dark hover:border-plum focus:border-plum cursor-pointer rounded-xl max-w-37.5"
                       >
@@ -305,9 +294,7 @@ export default function UserDirectory({
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-plum/10 text-sm">
           <span className="text-muted-label">
             Showing{" "}
-            <strong className="text-body-dark">
-              {(currentPage - 1) * pageSize + 1}
-            </strong>{" "}
+            <strong className="text-body-dark">{(currentPage - 1) * pageSize + 1}</strong>{" "}
             to{" "}
             <strong className="text-body-dark">
               {Math.min(currentPage * pageSize, filteredUsers.length)}
