@@ -6,15 +6,15 @@ import {
   HiPencilSquare,
   HiAcademicCap,
   HiCloudArrowUp,
-  HiCog6Tooth,
   HiFolder,
   HiArrowRightOnRectangle,
-  HiBeaker,
+  HiUserGroup,
 } from "react-icons/hi2";
 import { showConfirmModal } from "../utils/sweetalert";
 import { getAvatarColor, getInitials } from "../utils/avatarColors";
 import logo from "../assets/logo.png";
-import { FaBoxOpen } from "react-icons/fa";
+import { MdMonitorHeart } from "react-icons/md";
+import { MdAdminPanelSettings } from "react-icons/md";
 
 /**
  * Universal Floating Navigation Dock
@@ -74,7 +74,7 @@ export default function NavigationDock() {
     {
       to: "/workspace/resources",
       label: "Resources",
-      icon: FaBoxOpen,
+      icon: HiFolder,
       show: true,
     },
     {
@@ -86,20 +86,20 @@ export default function NavigationDock() {
     {
       to: "/workspace/upload-monitor",
       label: "Upload Monitor",
-      icon: HiFolder,
+      icon: MdMonitorHeart,
       show: isAdmin,
     },
     {
       to: "/workspace/admin",
       label: "Admin",
-      icon: HiCog6Tooth,
+      icon: MdAdminPanelSettings,
       show: isAdmin,
     },
     {
-      to: "/workspace/contribute",
-      label: "Contribute",
-      icon: HiBeaker,
-      show: isAdmin,
+      to: "/workspace/community",
+      label: "Community",
+      icon: HiUserGroup,
+      show: true,
     },
   ];
 

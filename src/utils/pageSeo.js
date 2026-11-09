@@ -34,11 +34,6 @@ const PAGE_METADATA = {
     description:
       "Contact the SpellyCraft team for account support, technical help, and feedback about English learning resources.",
   },
-  "/contribute": {
-    title: "Contribute to SpellyCraft",
-    description:
-      "Help improve SpellyCraft by contributing ideas, reporting issues, or supporting English learning resources.",
-  },
   "/support-us": {
     title: "Support SpellyCraft",
     description:
@@ -62,6 +57,9 @@ const WORKSPACE_METADATA = {
   "/workspace/admin": ["Administration", "Manage SpellyCraft platform administration."],
   "/workspace/profile": ["Your Profile", "Manage your SpellyCraft learner profile."],
   "/workspace/resources": ["Member Resources", "Browse free study resources for signed-in SpellyCraft members."],
+  "/workspace/community": ["Community & Development", "Review private request statuses, aggregate community activity, and explore developer collaboration."],
+  "/workspace/developer": ["Developer Collaboration", "Manage your SpellyCraft developer application, profile, and private project proposals."],
+  "/workspace/developer/application": ["Developer Application", "Submit a private application to contribute to SpellyCraft development."],
 };
 
 function makeMetadata(title, description, pathname, robots = "index, follow") {

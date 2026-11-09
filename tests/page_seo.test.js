@@ -37,6 +37,15 @@ test("indexes the public resource directory but keeps member resources private",
   );
 });
 
+test("keeps the community and developer tools private", () => {
+  const community = getPageSeo("/workspace/community");
+  assert.equal(community.robots, "noindex, nofollow");
+  assert.match(community.title, /Community & Development/);
+  assert.match(getPageSeo("/contribute").robots, /noindex/);
+  assert.equal(getPageSeo("/workspace/developer").robots, "noindex, nofollow");
+  assert.equal(getPageSeo("/workspace/developer/application").robots, "noindex, nofollow");
+});
+
 test("resolves grammar lesson metadata and noindexes unknown paths", () => {
   const lesson = getPageSeo("/workspace/grammar/lesson/parallelism");
   assert.match(lesson.title, /Parallelism & Correlative Conjunctions Lesson/);
