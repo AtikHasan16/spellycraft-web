@@ -4,6 +4,7 @@ import {
   HiArrowLeft,
   HiBookOpen,
   HiChatBubbleLeftRight,
+  HiInformationCircle,
   HiPaperAirplane,
   HiSparkles,
   HiXMark,
@@ -50,6 +51,7 @@ function HelpChat({ fullPage = false, onClose }) {
   const [messages, setMessages] = useState([]);
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
+  const [showProviderInfo, setShowProviderInfo] = useState(false);
   const inputRef = useRef(null);
   const messagesEndRef = useRef(null);
 
@@ -75,11 +77,14 @@ function HelpChat({ fullPage = false, onClose }) {
     if (!message || sending) return;
 
     const topic = classifyHelpTopic(message, messages);
-    setMessages((current) => [...current, {
-      id: secureRandomUUID(),
-      role: "user",
-      text: message,
-    }]);
+    setMessages((current) => [
+      ...current,
+      {
+        id: secureRandomUUID(),
+        role: "user",
+        text: message,
+      },
+    ]);
     setDraft("");
 
     if (topic === "unsupported") {
@@ -95,7 +100,10 @@ function HelpChat({ fullPage = false, onClose }) {
       .map(({ role, text: content }) => ({ role, content }));
     setSending(true);
     try {
-      const answer = await sendHelpAssistantMessage([...context, { role: "user", content: message }]);
+      const answer = await sendHelpAssistantMessage([
+        ...context,
+        { role: "user", content: message },
+      ]);
       setMessages((current) => [
         ...current,
         { id: secureRandomUUID(), role: "assistant", text: answer },
@@ -107,7 +115,9 @@ function HelpChat({ fullPage = false, onClose }) {
         {
           id: secureRandomUUID(),
           role: "assistant",
-          text: error.message || "The assistant is temporarily unavailable. Please try again shortly.",
+          text:
+            error.message ||
+            "The assistant is temporarily unavailable. Please try again shortly.",
         },
       ]);
     } finally {
@@ -131,14 +141,16 @@ function HelpChat({ fullPage = false, onClose }) {
           </div>
           <div className="min-w-0">
             <h1 className="truncate text-base font-bold">SpellyCraft Assistant</h1>
-            <p className="mt-0.5 text-xs text-white/75">Vocabulary · Grammar · Platform help</p>
+            <p className="mt-0.5 text-xs text-white/75">
+              Vocabulary · Grammar · Platform help
+            </p>
           </div>
         </div>
         {onClose && (
           <button
             type="button"
             onClick={onClose}
-            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl text-white/90 transition hover:bg-white/15 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
+            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl text-white/90 transition hover:bg-white/15 hover:text-white focus-visible:outline-2 focus-visible:outline-white"
             aria-label="Close help chat"
           >
             <HiXMark className="h-6 w-6" aria-hidden="true" />
@@ -160,7 +172,8 @@ function HelpChat({ fullPage = false, onClose }) {
           <div className="max-w-[88%] rounded-2xl rounded-bl-md border border-plum-border/60 bg-white px-4 py-3 text-sm leading-6 text-body-dark shadow-sm">
             <p className="font-semibold">Hi, what are you working on?</p>
             <p className="mt-1 text-muted-label">
-              I can help with English vocabulary, grammar, or finding your way around SpellyCraft.
+              I can help with English vocabulary, grammar, or finding your way around
+              SpellyCraft.
             </p>
           </div>
         </div>
@@ -175,10 +188,13 @@ function HelpChat({ fullPage = false, onClose }) {
                 type="button"
                 onClick={() => sendMessage(prompt)}
                 disabled={sending}
-                className="flex min-h-11 items-center justify-between gap-3 rounded-xl border border-plum-border/50 bg-white px-3 text-left text-sm font-medium text-body-dark transition hover:border-plum/50 hover:bg-plum-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-plum"
+                className="flex min-h-11 items-center justify-between gap-3 rounded-xl border border-plum-border/50 bg-white px-3 text-left text-sm font-medium text-body-dark transition hover:border-plum/50 hover:bg-plum-light focus-visible:outline focus-visible:outline-plum"
               >
                 <span>{label}</span>
-                <HiArrowLeft className="h-4 w-4 rotate-180 text-plum" aria-hidden="true" />
+                <HiArrowLeft
+                  className="h-4 w-4 rotate-180 text-plum"
+                  aria-hidden="true"
+                />
               </button>
             ))}
           </div>
@@ -193,7 +209,10 @@ function HelpChat({ fullPage = false, onClose }) {
           sendMessage();
         }}
       >
-        <label className="sr-only" htmlFor={fullPage ? "help-message-full" : "help-message-popup"}>
+        <label
+          className="sr-only"
+          htmlFor={fullPage ? "help-message-full" : "help-message-popup"}
+        >
           Your question
         </label>
         <div className="flex items-end gap-2">
@@ -216,25 +235,78 @@ function HelpChat({ fullPage = false, onClose }) {
           <button
             type="submit"
             disabled={!draft.trim() || sending}
-            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl bg-plum text-white transition hover:bg-plum-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-plum disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl bg-plum text-white transition hover:bg-plum-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-plum disabled:cursor-not-allowed disabled:opacity-50"
             aria-label="Send message"
           >
             <HiPaperAirplane className="h-5 w-5" aria-hidden="true" />
           </button>
         </div>
         <p className="mt-2 text-center text-xs text-muted-label" role="status">
-          {sending ? "Thinking…" : "Only vocabulary, grammar, and platform guidance are in scope."}
+          {sending
+            ? "Thinking…"
+            : "Only vocabulary, grammar, and platform guidance are in scope."}
         </p>
       </form>
-      <p className="border-t border-plum-border/30 px-3 py-2 text-center text-[11px] leading-4 text-muted-label">
-        Provider integrations: Google AI Studio (Gemini) and NVIDIA NIM. We appreciate their developer access programs; free quotas and terms may change.
-      </p>
-      <p className="px-3 pb-2 text-center text-[11px] leading-4 text-muted-label">
-        Chat isn’t stored by SpellyCraft. Provider data handling follows their terms; don’t share sensitive details.
-      </p>
-    </section>
-  );
-}
+              <div className="border-t border-plum-border/30 bg-white">
+                <div className="flex items-center justify-between px-3 py-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowProviderInfo(true)}
+                    className="text-xs font-medium text-plum hover:text-plum-hover focus-visible:outline focus-visible:outline-plum"
+                    aria-label="Learn more about AI providers and privacy"
+                  >
+                    Learn more
+                    <HiInformationCircle className="inline h-3.5 w-3.5 ml-1" aria-hidden="true" />
+                  </button>
+                </div>
+              </div>
+              {showProviderInfo && (
+                <div
+                  className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4"
+                  role="dialog"
+                  aria-modal="true"
+                  aria-labelledby="provider-info-title"
+                >
+                  <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl">
+                    <div className="flex items-start justify-between">
+                      <h2 id="provider-info-title" className="text-base font-bold text-body-dark">
+                        AI Providers & Privacy
+                      </h2>
+                      <button
+                        type="button"
+                        onClick={() => setShowProviderInfo(false)}
+                        className="text-muted-label hover:text-body-dark focus-visible:outline focus-visible:outline-plum"
+                        aria-label="Close"
+                      >
+                        <HiXMark className="h-5 w-5" aria-hidden="true" />
+                      </button>
+                    </div>
+                    <div className="mt-4 space-y-3 text-sm text-muted-label">
+                      <p className="leading-5">
+                        <strong className="text-body-dark">Provider integrations:</strong> Google AI Studio (Gemini)
+                        and NVIDIA NIM. We appreciate their developer access programs; free quotas and terms may
+                        change.
+                      </p>
+                      <p className="leading-5">
+                        <strong className="text-body-dark">Chat isn't stored by SpellyCraft.</strong> Provider
+                        data handling follows their terms; don't share sensitive details.
+                      </p>
+                    </div>
+                    <div className="mt-5">
+                      <button
+                        type="button"
+                        onClick={() => setShowProviderInfo(false)}
+                        className="w-full min-h-11 rounded-xl bg-plum text-white font-semibold transition hover:bg-plum-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-plum"
+                      >
+                        Got it
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </section>
+          );
+        }
 
 export default function HelpAssistant() {
   const { isAuthenticated, loading } = useAuth();
@@ -259,7 +331,7 @@ export default function HelpAssistant() {
   }
 
   return (
-    <div className="fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] right-4 z-[60] flex flex-col items-end gap-3 md:bottom-6 md:right-6">
+    <div className="fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] right-4 z-60 flex flex-col items-end gap-3 md:bottom-6 md:right-6">
       {open && (
         <div
           id="help-assistant-panel"
@@ -277,7 +349,7 @@ export default function HelpAssistant() {
         aria-expanded={open}
         aria-controls={open ? "help-assistant-panel" : undefined}
         aria-label={open ? "Close SpellyCraft help" : "Open SpellyCraft help"}
-        className="group relative inline-flex min-h-14 min-w-14 items-center justify-center rounded-full bg-plum text-white shadow-xl shadow-plum/25 transition duration-200 hover:-translate-y-1 hover:bg-plum-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-plum"
+        className="group relative inline-flex min-h-14 min-w-14 items-center justify-center rounded-full bg-plum text-white shadow-xl shadow-plum/25 transition duration-200 hover:-translate-y-1 hover:bg-plum-hover focus-visible:outline focus-visible:outline-offset-4 focus-visible:outline-plum"
       >
         {open ? (
           <HiXMark className="h-6 w-6" aria-hidden="true" />
@@ -301,7 +373,7 @@ export function HelpAssistantPage() {
   }
 
   return (
-    <main className="min-h-[100dvh] bg-[#f7f5f4] px-3 py-3 sm:px-6 sm:py-6">
+    <main className="min-h-dvh bg-[#f7f5f4] px-3 py-3 sm:px-6 sm:py-6">
       <div className="mx-auto flex min-h-[calc(100dvh-1.5rem)] max-w-3xl flex-col sm:min-h-[calc(100dvh-3rem)]">
         <div className="mb-3 flex items-center justify-between gap-3 px-1 sm:mb-5">
           <div className="flex items-center gap-3">
@@ -316,7 +388,7 @@ export function HelpAssistantPage() {
           <button
             type="button"
             onClick={returnToPreviousPage}
-            className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-plum-border/60 bg-white px-3 text-sm font-semibold text-body-dark transition hover:border-plum hover:text-plum focus-visible:outline focus-visible:outline-2 focus-visible:outline-plum"
+            className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-plum-border/60 bg-white px-3 text-sm font-semibold text-body-dark transition hover:border-plum hover:text-plum focus-visible:outline focus-visible:outline-plum"
           >
             <HiArrowLeft className="h-4 w-4" aria-hidden="true" />
             <span className="hidden sm:inline">Back to SpellyCraft</span>
