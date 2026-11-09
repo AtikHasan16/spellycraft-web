@@ -7,6 +7,7 @@ import {
 } from "react-icons/hi2";
 import { FaLinkedin, FaGithub, FaGlobe } from "react-icons/fa6";
 import MinimalFooter from "../components/MinimalFooter";
+import { Helmet } from "react-helmet-async";
 
 const teamMembers = [
   {
@@ -32,8 +33,23 @@ const teamMembers = [
 
 export default function AboutPage() {
   return (
-    <div className="min-h-screen bg-white flex flex-col justify-between selection:bg-plum/20 selection:text-plum">
-      {/* Header */}
+    <>
+      <Helmet>
+        <title>About SpellyCraft | IELTS Vocabulary & Spelling Mastery Platform</title>
+        <meta name="description" content="Learn about SpellyCraft, the lexical mastery workspace for IELTS candidates. Built by academic IELTS specialists and full-stack engineers to master vocabulary through phonemic speech synthesis and active spelling recall." />
+        <meta name="keywords" content="About SpellyCraft, IELTS vocabulary platform, academic IELTS candidates, lexical mastery workspace, phonemic speech synthesis, vocabulary learning methodology" />
+        <meta property="og:title" content="About SpellyCraft | IELTS Vocabulary & Spelling Mastery Platform" />
+        <meta property="og:description" content="Learn about SpellyCraft, the lexical mastery workspace for IELTS candidates." />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://www.spellycraft.com/about" />
+        <meta property="og:image" content="https://www.spellycraft.com/logo192.png" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="About SpellyCraft | IELTS Vocabulary & Spelling Mastery Platform" />
+        <meta name="twitter:description" content="Learn about SpellyCraft, the lexical mastery workspace for IELTS candidates." />
+        <meta name="twitter:image" content="https://www.spellycraft.com/logo192.png" />
+      </Helmet>
+      <div className="min-h-screen bg-white flex flex-col justify-between selection:bg-plum/20 selection:text-plum">
+        {/* Header */}
       <header className="border-b border-plum/15 bg-white/90 backdrop-blur-md sticky top-0 z-30">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 h-18 flex items-center justify-between">
           <Link
@@ -198,5 +214,6 @@ export default function AboutPage() {
       {/* Simple Footer */}
       <MinimalFooter />
     </div>
-  );
-}
+            </>
+          );
+        }
