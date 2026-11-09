@@ -18,10 +18,15 @@ export default function MinimalFooter() {
           <span>© {new Date().getFullYear()} SpellyCraft (spellycraft.com). All rights reserved.</span>
         </div>
 
-        <div className="flex items-center space-x-1 sm:space-x-2 text-[11px]">
+        <div className="flex flex-col sm:flex-row items-center space-x-1 sm:space-x-2 text-[11px] gap-1">
           <span>Speech synthesized via</span>
           <span className="font-semibold text-body-dark">Microsoft Edge Neural TTS</span>
-        </div>
+                  <span className="hidden sm:inline text-plum/30">•</span>
+                  <span>AI assistance powered by</span>
+                  <span className="font-semibold text-body-dark">Google's Gemini (via Google AI Studio)</span>
+                  <span className="hidden sm:inline text-plum/30">•</span>
+                  <span className="font-semibold text-body-dark">NVIDIA NIM</span>
+                </div>
 
         <div className="flex items-center space-x-4 font-medium text-body-dark text-xs">
           <Link to="/resources" className="hover:text-plum transition">

@@ -4,6 +4,7 @@ import {
   HiFlag,
   HiAcademicCap,
   HiUserGroup,
+  HiSparkles,
 } from "react-icons/hi2";
 import { FaLinkedin, FaGithub, FaGlobe } from "react-icons/fa6";
 import MinimalFooter from "../components/MinimalFooter";
@@ -210,6 +211,26 @@ export default function AboutPage() {
           </div>
         </div>
       </main>
+
+      <div className="imlaa-card p-6 sm:p-8 space-y-4">
+        <div className="flex items-center space-x-3 text-plum">
+          <div className="w-10 h-10 rounded-xl bg-plum/10 flex items-center justify-center">
+            <HiSparkles className="w-6 h-6 text-plum" />
+          </div>
+          <h2 className="text-2xl font-bold text-body-dark">AI Technology</h2>
+        </div>
+        <div className="space-y-2 text-base text-body-dark leading-relaxed">
+          <p>
+            Our <strong>AI Help Assistant</strong> utilizes <strong>Google's Gemini models via Google AI Studio</strong> to assist with vocabulary definitions, grammar explanations, and platform guidance.
+          </p>
+          <p>
+            Our <strong>AI Vocabulary Generation</strong> utilizes <strong>NVIDIA NIM</strong> to assist with meaning translations and English definitions across multiple languages.
+          </p>
+          <p className="text-sm text-muted-label">
+            Provider data handling follows their respective terms; chat conversations are not stored by SpellyCraft.
+          </p>
+        </div>
+      </div>
 
       {/* Simple Footer */}
       <MinimalFooter />
