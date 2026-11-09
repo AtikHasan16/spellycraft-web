@@ -1,13 +1,14 @@
 import { supabase } from "./supabaseClient";
 import { invalidateVocabularyCache } from "./queryCache";
 
-const GENERATION_TIMEOUT_MS = 45_000;
+const GENERATION_TIMEOUT_MS = 120_000;
+const CHAT_TIMEOUT_MS = 120_000;
 const ANALYTICS_TIMEOUT_MS = 15_000;
 
 function getAiServiceUrl() {
   const configuredUrl = import.meta.env?.VITE_AI_BACKEND_URL?.trim();
   if (!configuredUrl) {
-    throw new Error("AI definitions are not configured for this deployment.");
+    throw new Error("AI features are not configured for this deployment.");
   }
   return configuredUrl.replace(/\/+$/, "");
 }
@@ -16,7 +17,7 @@ async function getAccessToken() {
   const { data, error } = await supabase.auth.getSession();
   if (error) throw new Error("Your session could not be verified. Please sign in again.");
   const token = data?.session?.access_token;
-  if (!token) throw new Error("Please sign in again to use AI definitions.");
+  if (!token) throw new Error("Please sign in again to use AI features.");
   return token;
 }
 
@@ -43,7 +44,7 @@ async function fetchWithTimeout(url, options, timeoutMs, operation) {
   }
 }
 
-async function postAuthenticated(path, body) {
+async function postAuthenticated(path, body, { timeoutMs = GENERATION_TIMEOUT_MS, operation = "AI generation" } = {}) {
   const [baseUrl, token] = await Promise.all([getAiServiceUrl(), getAccessToken()]);
   const response = await fetchWithTimeout(`${baseUrl}${path}`, {
     method: "POST",
@@ -52,20 +53,39 @@ async function postAuthenticated(path, body) {
       "Content-Type": "application/json",
     },
     body: JSON.stringify(body),
-  }, GENERATION_TIMEOUT_MS, "AI generation");
+  }, timeoutMs, operation);
   const payload = await response.json().catch(() => null);
   if (!response.ok || !payload?.success) {
     const error = new Error(
-      ["AI_RATE_LIMIT_EXCEEDED", "AI_DAILY_LIMIT_EXCEEDED", "AI_IP_RATE_LIMIT_EXCEEDED"].includes(
-        payload?.error,
-      )
-        ? "You have reached the definition request limit. Please try again shortly."
-        : "AI generation is temporarily unavailable. Please try again later.",
+      payload?.error === "AI_RATE_LIMIT_EXCEEDED"
+        ? "You have reached the per-minute AI request limit. Please wait before trying again."
+        : payload?.error === "AI_DAILY_LIMIT_EXCEEDED"
+          ? "You have reached today's AI request limit. Please try again tomorrow."
+          : payload?.error === "AI_IP_RATE_LIMIT_EXCEEDED"
+            ? "Too many AI requests came from this network. Please wait and try again."
+            : payload?.error === "CHAT_TOPIC_NOT_SUPPORTED"
+              ? "I can only help with vocabulary, grammar, and using the SpellyCraft platform."
+              : operation === "Chat request"
+                ? "The assistant is temporarily unavailable. Please try again shortly."
+                : "AI generation is temporarily unavailable. Please try again later.",
     );
     error.code = payload?.error || "AI_REQUEST_FAILED";
     throw error;
   }
   return payload;
+}
+
+export function sendHelpAssistantMessage(messages) {
+  return postAuthenticated(
+    "/api/ai/chat",
+    { messages },
+    { timeoutMs: CHAT_TIMEOUT_MS, operation: "Chat request" },
+  ).then((result) => {
+    if (typeof result.answer !== "string" || !result.answer.trim()) {
+      throw new Error("The assistant returned an empty response. Please try again.");
+    }
+    return result.answer.trim();
+  });
 }
 
 export function generateVocabularyMeaning(vocabularyId, languageCode) {

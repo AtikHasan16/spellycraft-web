@@ -4,9 +4,14 @@ import { useCountdownTimer } from "../hooks/useCountdownTimer";
 import { useModalEffects } from "../hooks/useModalEffects";
 import apiClient from "../services/apiClient";
 import { useAuth } from "../context/AuthContext";
+import { supabase } from "../services/supabaseClient";
 import { speakWithMicrosoftTTS, stopAudioPlayback } from "../utils/speechTts";
 import { showErrorAlert } from "../utils/sweetalert";
 import { secureShuffle } from "../utils/cryptoRandom";
+import {
+  getVocabularyMeaning,
+  MEANING_LANGUAGES,
+} from "../utils/meaningLanguages";
 import {
   getSpellingMasterySummary,
   getSpellingMistakes,
@@ -33,6 +38,7 @@ const PARTS = ["All Active", "Listening Vocabs", "Uploaded", "Mistakes"];
 
 export default function SpellingPage() {
   const { user, isAdmin } = useAuth();
+  const [preferredMeaningLanguage, setPreferredMeaningLanguage] = useState("en");
 
   // Navigation states: 'sets' | 'drill' | 'finished' | 'quiz'
   const [activePart, setActivePart] = useState("All Active");
@@ -68,6 +74,49 @@ export default function SpellingPage() {
   const sessionStartTimeRef = useRef(null);
   const isMountedRef = useRef(true);
   const loadWordsRequestId = useRef(0);
+
+  useEffect(() => {
+    let active = true;
+    async function loadPreferredMeaningLanguage() {
+      if (!user?.id) {
+        setPreferredMeaningLanguage("en");
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("preferred_meaning_language")
+        .eq("id", user.id)
+        .maybeSingle();
+      if (!active) return;
+      if (error) {
+        console.error("Could not load spelling meaning language preference:", error);
+        showErrorAlert(
+          "Language Preference Unavailable",
+          "The saved meaning language could not be loaded. Please check your Profile preferences.",
+        );
+        return;
+      }
+      const savedLanguage = data?.preferred_meaning_language || "en";
+      setPreferredMeaningLanguage(
+        MEANING_LANGUAGES.some(({ code }) => code === savedLanguage)
+          ? savedLanguage
+          : "en",
+      );
+    }
+
+    loadPreferredMeaningLanguage().catch((error) => {
+      if (!active) return;
+      console.error("Could not load spelling meaning language preference:", error);
+      showErrorAlert(
+        "Language Preference Unavailable",
+        "The saved meaning language could not be loaded. Please check your Profile preferences.",
+      );
+    });
+    return () => {
+      active = false;
+    };
+  }, [user?.id]);
 
   useEffect(() => {
     isMountedRef.current = true;
@@ -418,6 +467,9 @@ export default function SpellingPage() {
 
   const activeWords = mistakesOnly ? mistakesList : words;
   const currentWord = activeWords[currentIndex] || null;
+  const meaningLanguageLabel =
+    MEANING_LANGUAGES.find(({ code }) => code === preferredMeaningLanguage)?.label ||
+    "English";
 
   // Speak word with Christopher Neural + instant fallback
   const speakTargetWord = useCallback((overrideWord) => {
@@ -803,11 +855,11 @@ export default function SpellingPage() {
                       <p className="text-sm text-muted-label mt-1">
                         {entry.topic}
                       </p>
-                      {entry.word.banglaMeaning && (
-                        <p className="text-sm text-muted-label mt-3">
-                          {entry.word.banglaMeaning}
-                        </p>
-                      )}
+                      <p className="text-sm text-muted-label mt-3">
+                        {meaningLanguageLabel} meaning:{" "}
+                        {getVocabularyMeaning(entry.word, preferredMeaningLanguage) ||
+                          `No ${meaningLanguageLabel} meaning saved yet.`}
+                      </p>
                     </div>
                     <button
                       type="button"
@@ -1026,7 +1078,12 @@ export default function SpellingPage() {
                         <span>Flawless Spelling!</span>
                       </div>
                       <div className="text-sm text-emerald-900">
-                        <strong>{currentWord.word}</strong>: {currentWord.banglaMeaning}
+                        <strong>{currentWord.word}</strong>
+                      </div>
+                      <div className="text-sm text-emerald-900">
+                        {meaningLanguageLabel} meaning:{" "}
+                        {getVocabularyMeaning(currentWord, preferredMeaningLanguage) ||
+                          `No ${meaningLanguageLabel} meaning saved yet.`}
                       </div>
                     </div>
                   )}
@@ -1038,7 +1095,9 @@ export default function SpellingPage() {
                         <span>Correct Spelling: <strong className="text-lg underline ml-1">{currentWord.word}</strong></span>
                       </div>
                       <div className="text-sm text-rose-900">
-                        Meaning: {currentWord.banglaMeaning}
+                        {meaningLanguageLabel} meaning:{" "}
+                        {getVocabularyMeaning(currentWord, preferredMeaningLanguage) ||
+                          `No ${meaningLanguageLabel} meaning saved yet.`}
                       </div>
                       {currentWord.exampleUsage && (
                         <p className="text-xs text-rose-700 italic">
@@ -1351,6 +1410,11 @@ export default function SpellingPage() {
                         className="rounded-lg border border-rose-200 bg-white px-3 py-2 text-sm text-body-dark"
                       >
                         Correct spelling: <strong>{word.word}</strong>
+                        <span className="ml-1 text-muted-label">
+                          · {meaningLanguageLabel}:{" "}
+                          {getVocabularyMeaning(word, preferredMeaningLanguage) ||
+                            `No ${meaningLanguageLabel} meaning saved`}
+                        </span>
                       </li>
                     ))}
                   </ul>
@@ -1403,6 +1467,11 @@ export default function SpellingPage() {
                         className="rounded-lg border border-rose-200 bg-white px-3 py-2 text-sm text-body-dark"
                       >
                         Correct spelling: <strong>{word.word}</strong>
+                        <span className="ml-1 text-muted-label">
+                          · {meaningLanguageLabel}:{" "}
+                          {getVocabularyMeaning(word, preferredMeaningLanguage) ||
+                            `No ${meaningLanguageLabel} meaning saved`}
+                        </span>
                       </li>
                     ))}
                   </ul>
