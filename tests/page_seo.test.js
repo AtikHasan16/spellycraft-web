@@ -5,14 +5,20 @@ import { getPageSeo } from "../src/utils/pageSeo.js";
 test("provides branded titles and descriptions for public pages", () => {
   const seo = getPageSeo("/");
 
-  assert.match(seo.title, /IELTS Vocabulary.*SpellyCraft/);
-  assert.match(seo.description, /vocabulary.*spelling.*grammar/i);
+  assert.match(seo.title, /Secure Band 8\.0\+ in IELTS Writing & Listening.*SpellyCraft/);
+  assert.match(seo.description, /orthography.*spelling recall.*vocabulary/i);
   assert.equal(seo.robots, "index, follow");
   assert.equal(seo.canonical, "https://www.spellycraft.com/");
 });
 
 test("marks private workspace and password reset pages as non-indexable", () => {
-  for (const path of ["/workspace/grammar", "/workspace/upload-monitor", "/reset-password"]) {
+  for (const path of [
+    "/workspace/grammar",
+    "/workspace/upload-monitor",
+    "/reset-password",
+    "/login",
+    "/register",
+  ]) {
     assert.equal(getPageSeo(path).robots, "noindex, nofollow");
   }
 });
