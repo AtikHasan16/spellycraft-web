@@ -18,10 +18,11 @@ import {
   showErrorAlert,
 } from "../utils/sweetalert";
 import GrammarMonitorTab from "../components/admin/GrammarMonitorTab";
+import ResourceMonitorTab from "../features/admin/ResourceMonitorTab";
 
 export default function VocabMonitorPage() {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState("topics"); // 'topics' | 'words' | 'logs' | 'grammar'
+  const [activeTab, setActiveTab] = useState("topics");
 
   // Data states
   const [stats, setStats] = useState(null);
@@ -322,9 +323,22 @@ export default function VocabMonitorPage() {
           <HiAcademicCap className="w-5 h-5" />
           <span>Grammar Questions</span>
         </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("resources")}
+          className={`min-h-11 px-4 py-2 rounded-lg text-base font-semibold transition-all cursor-pointer flex items-center space-x-2 ${
+            activeTab === "resources"
+              ? "bg-plum text-white shadow-xs"
+              : "text-muted-label hover:text-body-dark"
+          }`}
+        >
+          <HiFolder className="w-5 h-5" />
+          <span>Resources</span>
+        </button>
       </div>
 
       {activeTab === "grammar" && <GrammarMonitorTab />}
+      {activeTab === "resources" && <ResourceMonitorTab />}
 
       {/* TAB 1: TOPIC CARDS MANAGEMENT */}
       {activeTab === "topics" && (

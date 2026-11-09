@@ -8,12 +8,16 @@
 - `migrations/20261108_ai_vocabulary_generation.sql` adds the preferred meaning language, localized meaning columns, an English definition column, signed AI persistence, and admin-only token/error analytics. It also creates a one-time signing secret; configure its returned value as `AI_BACKEND_SIGNING_SECRET` only on the trusted AI backend.
 - `migrations/20261108_add_nvidia_nim_ai_provider.sql` allows the NVIDIA NIM provider identifier in AI usage analytics; apply it after the AI vocabulary generation migration.
 - `migrations/20261108_clear_ai_usage_errors.sql` adds the admin-only RPC used by the AI Usage tab to permanently clear failed-attempt logs while preserving successful usage records and vocabulary.
+- `migrations/20261109_resource_collections.sql` creates public and authenticated-only resource metadata collections with admin-only writes and Google Drive link constraints. It does not upload or delete Drive files.
 
-For a new project, run `schema.sql`, apply the migrations in order, then run
-`security_policies.sql`. For an existing project, do not use `schema.sql` as a
-migration: `CREATE TABLE IF NOT EXISTS` does not reconcile columns on
-already-existing tables. Confirm the canonical tables exist, apply all
-migrations in order, then run `security_policies.sql`. The Phase 2.3 migration
+For a new project, run `schema.sql`, then run `security_policies.sql` to install
+the role-checking helper before applying migrations that reference
+`public.is_admin()`. Apply the migrations in order, then run
+`security_policies.sql` again to restore the canonical policies. For an existing
+project, do not use `schema.sql` as a migration: `CREATE TABLE IF NOT EXISTS`
+does not reconcile columns on already-existing tables. Confirm the canonical
+tables exist and that `security_policies.sql` has been applied, then apply new
+migrations in order and rerun `security_policies.sql` when instructed. The Phase 2.3 migration
 preserves legacy uploader names, backfills routing from old prefixes, and
 carries UUID audit targets into `target_user_id` before dropping the legacy
 `access_id` column. It aborts rather than deleting data if duplicate

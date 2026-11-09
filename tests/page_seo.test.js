@@ -23,6 +23,20 @@ test("marks private workspace and password reset pages as non-indexable", () => 
   }
 });
 
+test("indexes the public resource directory but keeps member resources private", () => {
+  const publicResources = getPageSeo("/resources");
+  assert.equal(publicResources.robots, "index, follow");
+  assert.equal(
+    publicResources.canonical,
+    "https://www.spellycraft.com/resources",
+  );
+  assert.match(publicResources.description, /IELTS.*spelling.*listening/i);
+  assert.equal(
+    getPageSeo("/workspace/resources").robots,
+    "noindex, nofollow",
+  );
+});
+
 test("resolves grammar lesson metadata and noindexes unknown paths", () => {
   const lesson = getPageSeo("/workspace/grammar/lesson/parallelism");
   assert.match(lesson.title, /Parallelism & Correlative Conjunctions Lesson/);

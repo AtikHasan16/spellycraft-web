@@ -24,6 +24,11 @@ const PAGE_METADATA = {
     description:
       "Learn about SpellyCraft, an English learning platform for IELTS vocabulary, spelling practice, and grammar mastery.",
   },
+  "/resources": {
+    title: "Free IELTS Study Resources",
+    description:
+      "Browse free IELTS spelling, listening, reading, writing, and academic vocabulary resources in the SpellyCraft lexical mastery workspace.",
+  },
   "/contact": {
     title: "Contact SpellyCraft",
     description:
@@ -56,6 +61,7 @@ const WORKSPACE_METADATA = {
   "/workspace/upload-monitor": ["Upload Monitor", "Manage SpellyCraft vocabulary and grammar learning content."],
   "/workspace/admin": ["Administration", "Manage SpellyCraft platform administration."],
   "/workspace/profile": ["Your Profile", "Manage your SpellyCraft learner profile."],
+  "/workspace/resources": ["Member Resources", "Browse free study resources for signed-in SpellyCraft members."],
 };
 
 function makeMetadata(title, description, pathname, robots = "index, follow") {

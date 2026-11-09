@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import ErrorBoundary from "./components/ErrorBoundary";
 import CapacityGuardModal from "./components/CapacityGuardModal";
@@ -23,6 +23,8 @@ const AboutPage = lazy(() => import("./pages/AboutPage"));
 const ContactPage = lazy(() => import("./pages/ContactPage"));
 const NotFoundPage = lazy(() => import("./pages/NotFoundPage"));
 const ResetPasswordPage = lazy(() => import("./pages/ResetPasswordPage"));
+const ResourcesPage = lazy(() => import("./pages/ResourcesPage"));
+const PrivateResourcesPage = lazy(() => import("./pages/PrivateResourcesPage"));
 
 function PageRoute({ component: Page }) {
   return (
@@ -45,6 +47,7 @@ function PageRoute({ component: Page }) {
 // Protected Route Guard
 function ProtectedRoute({ children, requiredRole }) {
   const { isAuthenticated, loading, role } = useAuth();
+  const location = useLocation();
 
   if (loading) {
     return (
@@ -57,7 +60,7 @@ function ProtectedRoute({ children, requiredRole }) {
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/login" replace state={{ from: location }} />;
   }
 
   if (requiredRole === "admin" && role !== "admin") {
@@ -79,6 +82,7 @@ export default function App() {
           <Route path="/login" element={<PageRoute component={AuthPage} />} />
           <Route path="/register" element={<PageRoute component={AuthPage} />} />
           <Route path="/about" element={<PageRoute component={AboutPage} />} />
+          <Route path="/resources" element={<PageRoute component={ResourcesPage} />} />
           <Route path="/contact" element={<PageRoute component={ContactPage} />} />
           <Route path="/contribute" element={<PageRoute component={ContributePage} />} />
           <Route path="/support-us" element={<PageRoute component={SupportUsPage} />} />
@@ -132,6 +136,10 @@ export default function App() {
               }
             />
             <Route path="profile" element={<PageRoute component={ProfilePage} />} />
+            <Route
+              path="resources"
+              element={<PageRoute component={PrivateResourcesPage} />}
+            />
           </Route>
 
           {/* Catch-all 404 */}

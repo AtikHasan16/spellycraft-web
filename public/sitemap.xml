@@ -13,6 +13,12 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://www.spellycraft.com/resources</loc>
+    <lastmod>2026-11-09</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://www.spellycraft.com/support-us</loc>
     <lastmod>2026-11-09</lastmod>
     <changefreq>monthly</changefreq>

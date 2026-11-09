@@ -263,15 +263,15 @@ function AuthoritySection() {
         </div>
         <div className="rounded-3xl border border-cyan-200/20 bg-linear-to-br from-cyan-300/15 to-plum/30 p-6 sm:p-8">
           <p className="text-sm font-bold uppercase tracking-[0.15em] text-cyan-200">
-            Your requested success target
+            Your practice toolkit
           </p>
           <p className="mt-4 text-4xl font-black leading-tight sm:text-5xl">
-            Average Score Boost:
-            <span className="mt-2 block text-cyan-200">+1.5 Band Points</span>
+            Build a stronger
+            <span className="mt-2 block text-cyan-200">IELTS study routine</span>
           </p>
           <p className="mt-4 text-sm leading-relaxed text-slate-300">
-            A goal to work toward—not a verified outcome or guarantee. IELTS results
-            depend on each learner’s starting level, study plan, and exam performance.
+            Use focused practice to support your own goals. Results vary by learner;
+            SpellyCraft does not promise a particular score outcome.
           </p>
           <div className="mt-8 space-y-3 border-t border-white/10 pt-5">
             <div className="rounded-xl bg-white/5 p-4">
@@ -301,6 +301,12 @@ export default function LandingPage() {
           SpellyCraft<span aria-hidden="true">.</span>
         </Link>
         <nav aria-label="Main navigation" className="flex items-center gap-2 sm:gap-5">
+          <Link
+            to="/resources"
+            className="min-h-11 inline-flex items-center px-2 text-sm font-semibold text-muted-label hover:text-plum"
+          >
+            Resources
+          </Link>
           <Link
             to="/about"
             className="hidden min-h-11 items-center px-2 text-sm font-semibold text-muted-label hover:text-plum sm:inline-flex"
