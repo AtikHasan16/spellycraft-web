@@ -16,6 +16,7 @@ import { escapeHtml } from "../utils/escapeHtml";
 import { extractErrorDetails } from "../utils/errorParser";
 import UploadGuideModal from "../components/UploadGuideModal";
 import GrammarQuestionBulkUpload from "../components/GrammarQuestionBulkUpload";
+import ResourceUploadTab from "../components/admin/ResourceUploadTab";
 
 export default function UploadStudyPage() {
   const { user } = useAuth();
@@ -286,9 +287,21 @@ export default function UploadStudyPage() {
           {!isAdmin && <HiLockClosed className="mr-2 inline h-4 w-4" />}
           Grammar MCQ Upload{!isAdmin && " (Admin only)"}
         </button>
+        {isAdmin && (
+          <button
+            type="button"
+            aria-pressed={activeUploadTab === "resources"}
+            onClick={() => setActiveUploadTab("resources")}
+            className={`imlaa-tab-btn min-h-11 px-5 py-2.5 ${activeUploadTab === "resources" ? "active" : ""}`}
+          >
+            Resource Upload
+          </button>
+        )}
       </div>
 
-      {isAdmin && activeUploadTab === "grammar" ? (
+      {isAdmin && activeUploadTab === "resources" ? (
+        <ResourceUploadTab />
+      ) : isAdmin && activeUploadTab === "grammar" ? (
         <GrammarQuestionBulkUpload />
       ) : (
         <>

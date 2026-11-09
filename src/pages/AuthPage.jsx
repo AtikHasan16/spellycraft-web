@@ -15,6 +15,25 @@ import { speakWithMicrosoftTTS } from "../utils/speechTts";
 import MinimalFooter from "../components/MinimalFooter";
 import { showErrorAlert } from "../utils/sweetalert";
 
+function getPostAuthPath(location) {
+  const from = location.state?.from;
+  const pathname =
+    typeof from === "string" ? from : from?.pathname;
+  const hasLocationState = Boolean(from) && typeof from === "object";
+  const search = hasLocationState ? from.search || "" : "";
+  const hash = hasLocationState ? from.hash || "" : "";
+
+  if (
+    !pathname?.startsWith("/") ||
+    pathname.startsWith("//") ||
+    pathname.includes("\\")
+  ) {
+    return "/workspace/flashcard";
+  }
+
+  return `${pathname}${search}${hash}`;
+}
+
 export default function AuthPage() {
   // Modes: 'signin' | 'signup' | 'otp' | 'forgot' | 'reset_password'
   const location = useLocation();
@@ -50,6 +69,7 @@ export default function AuthPage() {
     isAuthenticated,
   } = useAuth();
   const navigate = useNavigate();
+  const postAuthPath = getPostAuthPath(location);
 
   useEffect(() => {
     if (location.pathname === "/login" || location.pathname === "/register") {
@@ -62,9 +82,9 @@ export default function AuthPage() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      navigate("/workspace/flashcard");
+      navigate(postAuthPath, { replace: true });
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, navigate, postAuthPath]);
 
   // Live Password Strength Meter
   const getPasswordStrength = (pass) => {
@@ -109,7 +129,7 @@ export default function AuthPage() {
     setInfoMessage("");
     setIsGoogleAlert(false);
     setGoogleLoading(true);
-    const res = await signInWithGoogle();
+    const res = await signInWithGoogle(postAuthPath);
     if (!res.success) {
       setErrorMessage(res.message);
       setGoogleLoading(false);
@@ -167,7 +187,7 @@ export default function AuthPage() {
       try {
         const res = await signInWithEmail(cleanEmail, password);
         if (res.success) {
-          navigate("/workspace/flashcard");
+          navigate(postAuthPath, { replace: true });
         } else {
           setErrorMessage(res.message);
           if (res.isGoogleAccount) {
@@ -200,7 +220,7 @@ export default function AuthPage() {
               "A 6-digit verification code was sent to your email. Enter it below to activate your account.",
             );
           } else {
-            navigate("/workspace/flashcard");
+            navigate(postAuthPath, { replace: true });
           }
         } else {
           setErrorMessage(res.message);
@@ -225,7 +245,7 @@ export default function AuthPage() {
       try {
         const res = await verifyEmailOtp(cleanEmail, cleanOtp);
         if (res.success) {
-          navigate("/workspace/flashcard");
+          navigate(postAuthPath, { replace: true });
         } else {
           setErrorMessage(res.message);
         }

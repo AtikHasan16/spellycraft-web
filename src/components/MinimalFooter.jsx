@@ -24,6 +24,9 @@ export default function MinimalFooter() {
         </div>
 
         <div className="flex items-center space-x-4 font-medium text-body-dark text-xs">
+          <Link to="/resources" className="hover:text-plum transition">
+            Resources
+          </Link>
           <Link to="/about" className="hover:text-plum transition">
             About
           </Link>

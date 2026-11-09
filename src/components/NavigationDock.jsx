@@ -14,6 +14,7 @@ import {
 import { showConfirmModal } from "../utils/sweetalert";
 import { getAvatarColor, getInitials } from "../utils/avatarColors";
 import logo from "../assets/logo.png";
+import { FaBoxOpen } from "react-icons/fa";
 
 /**
  * Universal Floating Navigation Dock
@@ -68,6 +69,12 @@ export default function NavigationDock() {
       to: "/workspace/grammar",
       label: "Grammar",
       icon: HiAcademicCap,
+      show: true,
+    },
+    {
+      to: "/workspace/resources",
+      label: "Resources",
+      icon: FaBoxOpen,
       show: true,
     },
     {

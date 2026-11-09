@@ -17,6 +17,7 @@ const OUTPUT_PATH = path.join(__dirname, '..', 'public', 'sitemap.xml');
 const routes = [
   { path: '/', changefreq: 'weekly', priority: 1.0 },
   { path: '/about', changefreq: 'monthly', priority: 0.8 },
+  { path: '/resources', changefreq: 'weekly', priority: 0.8 },
   { path: '/support-us', changefreq: 'monthly', priority: 0.7 },
 ];
 

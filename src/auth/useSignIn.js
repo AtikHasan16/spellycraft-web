@@ -3,17 +3,23 @@ import { checkEmailAuthProvider } from "./authService";
 import { telemetry } from "../services/telemetryService";
 
 export function useSignIn({ setError, setUser, setRole, syncProfile }) {
-  const signInWithGoogle = async () => {
+  const signInWithGoogle = async (requestedPath = "/workspace/vocab") => {
     setError(null);
     try {
       const origin =
         typeof window !== "undefined" && window.location?.origin
           ? window.location.origin
           : (import.meta.env?.VITE_FRONTEND_URL || "https://www.spellycraft.com");
+      const redirectPath =
+        typeof requestedPath === "string" &&
+        requestedPath.startsWith("/") &&
+        !requestedPath.startsWith("//")
+          ? requestedPath
+          : "/workspace/vocab";
       const { data, error: authErr } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${origin}/workspace/vocab`,
+          redirectTo: `${origin}${redirectPath}`,
           queryParams: { access_type: "offline", prompt: "consent" },
         },
       });
