@@ -10,6 +10,7 @@ import {
 import { SiBuymeacoffee, SiPaypal } from "react-icons/si";
 import { showSuccessToast } from "../utils/sweetalert";
 import MinimalFooter from "../components/MinimalFooter";
+import { Helmet } from "react-helmet-async";
 
 export default function SupportUsPage() {
   const navigate = useNavigate();
@@ -63,8 +64,23 @@ export default function SupportUsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white text-body-dark flex flex-col justify-between overflow-x-hidden">
-      {/* Top Header */}
+      <>
+        <Helmet>
+          <title>Support SpellyCraft | Help Us Build Better IELTS Learning Tools</title>
+          <meta name="description" content="Support SpellyCraft's mission to provide free, high-quality IELTS vocabulary and spelling mastery tools. Your contributions help maintain phonemic speech synthesis, lexical mastery workspace, and academic IELTS candidate resources." />
+          <meta name="keywords" content="Support SpellyCraft, donate IELTS learning platform, academic IELTS candidates, lexical mastery workspace, phonemic speech synthesis, vocabulary building tools" />
+          <meta property="og:title" content="Support SpellyCraft | Help Us Build Better IELTS Learning Tools" />
+          <meta property="og:description" content="Support SpellyCraft's mission to provide free, high-quality IELTS vocabulary and spelling mastery tools." />
+          <meta property="og:type" content="website" />
+          <meta property="og:url" content="https://www.spellycraft.com/support-us" />
+          <meta property="og:image" content="https://www.spellycraft.com/logo192.png" />
+          <meta name="twitter:card" content="summary_large_image" />
+          <meta name="twitter:title" content="Support SpellyCraft | Help Us Build Better IELTS Learning Tools" />
+          <meta name="twitter:description" content="Support SpellyCraft's mission to provide free, high-quality IELTS vocabulary and spelling mastery tools." />
+          <meta name="twitter:image" content="https://www.spellycraft.com/logo192.png" />
+        </Helmet>
+        <div className="min-h-screen bg-white text-body-dark flex flex-col justify-between overflow-x-hidden">
+          {/* Top Header */}
       <header className="border-b border-plum/15 px-4 sm:px-6 py-3.5 sm:py-4 bg-white/80 backdrop-blur-md sticky top-0 z-40">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <button
@@ -222,5 +238,6 @@ export default function SupportUsPage() {
       {/* Simple Footer */}
       <MinimalFooter />
     </div>
-  );
-}
+          </>
+        );
+      }

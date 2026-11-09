@@ -14,6 +14,7 @@ import {
 import { speakWithMicrosoftTTS } from "../utils/speechTts";
 import MinimalFooter from "../components/MinimalFooter";
 import { showErrorAlert } from "../utils/sweetalert";
+import { Helmet } from "react-helmet-async";
 
 export default function LandingPage() {
   // Modes: 'signin' | 'signup' | 'otp' | 'forgot' | 'reset_password'
@@ -285,7 +286,22 @@ export default function LandingPage() {
   };
 
   return (
-    <div className="min-h-screen w-full bg-white text-body-dark flex flex-col justify-between px-3 sm:px-6 md:px-8 pt-4 sm:pt-6 overflow-x-hidden">
+      <>
+        <Helmet>
+          <title>IELTS Vocabulary, Spelling & Grammar Practice | SpellyCraft</title>
+          <meta name="description" content="Build IELTS vocabulary, improve English spelling, and practise grammar with SpellyCraft's interactive learning tools. Master academic lexical resource with phonemic speech synthesis and spaced repetition." />
+          <meta name="keywords" content="IELTS vocabulary, academic IELTS candidates, lexical mastery workspace, phonemic speech synthesis, English spelling practice, vocabulary builder, IELTS preparation, spelling dictation, grammar practice" />
+          <meta property="og:title" content="IELTS Vocabulary, Spelling & Grammar Practice | SpellyCraft" />
+          <meta property="og:description" content="Build IELTS vocabulary, improve English spelling, and practise grammar with SpellyCraft's interactive learning tools." />
+          <meta property="og:type" content="website" />
+          <meta property="og:url" content="https://www.spellycraft.com/" />
+          <meta property="og:image" content="https://www.spellycraft.com/logo192.png" />
+          <meta name="twitter:card" content="summary_large_image" />
+          <meta name="twitter:title" content="IELTS Vocabulary, Spelling & Grammar Practice | SpellyCraft" />
+          <meta name="twitter:description" content="Build IELTS vocabulary, improve English spelling, and practise grammar with SpellyCraft's interactive learning tools." />
+          <meta name="twitter:image" content="https://www.spellycraft.com/logo192.png" />
+        </Helmet>
+        <div className="min-h-screen w-full bg-white text-body-dark flex flex-col justify-between px-3 sm:px-6 md:px-8 pt-4 sm:pt-6 overflow-x-hidden">
       {/* Top Navbar */}
       <header className="w-full max-w-6xl mx-auto flex items-center justify-between pb-4 sm:pb-6 gap-3">
         <div className="flex items-center space-x-2 shrink-0">
@@ -852,5 +868,6 @@ export default function LandingPage() {
         <MinimalFooter />
       </div>
     </div>
-  );
-}
+            </>
+          );
+        }
