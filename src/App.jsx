@@ -25,6 +25,12 @@ const NotFoundPage = lazy(() => import("./pages/NotFoundPage"));
 const ResetPasswordPage = lazy(() => import("./pages/ResetPasswordPage"));
 const ResourcesPage = lazy(() => import("./pages/ResourcesPage"));
 const PrivateResourcesPage = lazy(() => import("./pages/PrivateResourcesPage"));
+const HelpAssistant = lazy(() => import("./features/help/HelpAssistant"));
+const HelpAssistantPage = lazy(() =>
+  import("./features/help/HelpAssistant").then((module) => ({
+    default: module.HelpAssistantPage,
+  })),
+);
 const DeveloperApplicationPage = lazy(() =>
   import("./pages/DeveloperWorkspacePage").then((module) => ({
     default: module.DeveloperApplicationPage,
@@ -90,6 +96,14 @@ export default function App() {
           <Route path="/resources" element={<PageRoute component={ResourcesPage} />} />
           <Route path="/contact" element={<PageRoute component={ContactPage} />} />
           <Route path="/support-us" element={<PageRoute component={SupportUsPage} />} />
+          <Route
+            path="/help"
+            element={
+              <ProtectedRoute>
+                <PageRoute component={HelpAssistantPage} />
+              </ProtectedRoute>
+            }
+          />
           <Route path="/reset-password" element={<PageRoute component={ResetPasswordPage} />} />
 
           {/* Preserve old access-status URLs as redirects after retiring those pages. */}
@@ -155,6 +169,9 @@ export default function App() {
           {/* Catch-all 404 */}
           <Route path="*" element={<PageRoute component={NotFoundPage} />} />
         </Routes>
+        <Suspense fallback={null}>
+          <HelpAssistant />
+        </Suspense>
       </BrowserRouter>
     </AuthProvider>
   );

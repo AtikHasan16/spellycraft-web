@@ -1,0 +1,337 @@
+import { useEffect, useRef, useState } from "react";
+import {
+  HiAcademicCap,
+  HiArrowLeft,
+  HiBookOpen,
+  HiChatBubbleLeftRight,
+  HiPaperAirplane,
+  HiSparkles,
+  HiXMark,
+} from "react-icons/hi2";
+import { Link, useLocation, useNavigate } from "react-router";
+import { useAuth } from "../../context/AuthContext";
+import { sendHelpAssistantMessage } from "../../services/aiService";
+import { secureRandomUUID } from "../../utils/cryptoRandom";
+import { classifyHelpTopic, getHelpAssistantReply } from "./helpAssistantUtils";
+
+const SUGGESTIONS = [
+  { label: "Help me with a word", prompt: "Can you help me with vocabulary?" },
+  { label: "Explain a grammar topic", prompt: "Can you help me with grammar?" },
+  { label: "Find my study progress", prompt: "Where can I find my progress?" },
+];
+
+function ChatMessage({ message }) {
+  const isAssistant = message.role === "assistant";
+
+  return (
+    <div className={`flex ${isAssistant ? "justify-start" : "justify-end"}`}>
+      <div
+        className={`max-w-[88%] rounded-2xl px-4 py-3 text-sm leading-6 ${
+          isAssistant
+            ? "rounded-bl-md border border-plum-border/60 bg-white text-body-dark shadow-sm"
+            : "rounded-br-md bg-plum text-white"
+        }`}
+      >
+        <p>{message.text}</p>
+        {message.link && (
+          <Link
+            to={message.link.to}
+            className="mt-2 inline-flex min-h-11 items-center font-semibold text-plum underline decoration-plum/40 underline-offset-2 hover:text-plum-hover"
+          >
+            {message.link.label}
+          </Link>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function HelpChat({ fullPage = false, onClose }) {
+  const [messages, setMessages] = useState([]);
+  const [draft, setDraft] = useState("");
+  const [sending, setSending] = useState(false);
+  const inputRef = useRef(null);
+  const messagesEndRef = useRef(null);
+
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [messages]);
+
+  useEffect(() => {
+    function handleEscape(event) {
+      if (event.key === "Escape") onClose?.();
+    }
+
+    window.addEventListener("keydown", handleEscape);
+    return () => window.removeEventListener("keydown", handleEscape);
+  }, [onClose]);
+
+  async function sendMessage(text = draft) {
+    const message = text.trim();
+    if (!message || sending) return;
+
+    const topic = classifyHelpTopic(message, messages);
+    setMessages((current) => [...current, {
+      id: secureRandomUUID(),
+      role: "user",
+      text: message,
+    }]);
+    setDraft("");
+
+    if (topic === "unsupported") {
+      setMessages((current) => [
+        ...current,
+        { id: secureRandomUUID(), role: "assistant", ...getHelpAssistantReply(topic) },
+      ]);
+      return;
+    }
+
+    const context = messages
+      .slice(-6)
+      .map(({ role, text: content }) => ({ role, content }));
+    setSending(true);
+    try {
+      const answer = await sendHelpAssistantMessage([...context, { role: "user", content: message }]);
+      setMessages((current) => [
+        ...current,
+        { id: secureRandomUUID(), role: "assistant", text: answer },
+      ]);
+    } catch (error) {
+      console.error("Could not get a help assistant response:", error);
+      setMessages((current) => [
+        ...current,
+        {
+          id: secureRandomUUID(),
+          role: "assistant",
+          text: error.message || "The assistant is temporarily unavailable. Please try again shortly.",
+        },
+      ]);
+    } finally {
+      setSending(false);
+    }
+  }
+
+  return (
+    <section
+      className={`flex min-h-0 flex-col overflow-hidden border border-plum-border/70 bg-white shadow-2xl shadow-body-dark/15 ${
+        fullPage
+          ? "h-full rounded-2xl"
+          : "h-[min(39rem,calc(100dvh-8rem))] w-[min(24rem,calc(100vw-2rem))] rounded-2xl"
+      }`}
+      aria-label="SpellyCraft help chat"
+    >
+      <header className="flex items-center justify-between gap-3 bg-plum px-4 py-4 text-white">
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/15">
+            <HiSparkles className="h-6 w-6" aria-hidden="true" />
+          </div>
+          <div className="min-w-0">
+            <h1 className="truncate text-base font-bold">SpellyCraft Assistant</h1>
+            <p className="mt-0.5 text-xs text-white/75">Vocabulary · Grammar · Platform help</p>
+          </div>
+        </div>
+        {onClose && (
+          <button
+            type="button"
+            onClick={onClose}
+            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl text-white/90 transition hover:bg-white/15 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
+            aria-label="Close help chat"
+          >
+            <HiXMark className="h-6 w-6" aria-hidden="true" />
+          </button>
+        )}
+      </header>
+
+      <div className="flex items-center gap-2 border-b border-plum-border/40 bg-plum-light px-4 py-2.5 text-xs text-plum">
+        <span className="h-2 w-2 rounded-full bg-emerald-600" aria-hidden="true" />
+        <span>AI help is available for vocabulary, grammar, and platform guidance.</span>
+      </div>
+
+      <div
+        className="flex-1 space-y-3 overflow-y-auto bg-[#faf9f8] p-4"
+        aria-live="polite"
+        aria-relevant="additions text"
+      >
+        <div className="flex justify-start">
+          <div className="max-w-[88%] rounded-2xl rounded-bl-md border border-plum-border/60 bg-white px-4 py-3 text-sm leading-6 text-body-dark shadow-sm">
+            <p className="font-semibold">Hi, what are you working on?</p>
+            <p className="mt-1 text-muted-label">
+              I can help with English vocabulary, grammar, or finding your way around SpellyCraft.
+            </p>
+          </div>
+        </div>
+        {messages.map((message) => (
+          <ChatMessage key={message.id} message={message} />
+        ))}
+        {!messages.length && (
+          <div className="grid gap-2 pt-1">
+            {SUGGESTIONS.map(({ label, prompt }) => (
+              <button
+                key={label}
+                type="button"
+                onClick={() => sendMessage(prompt)}
+                disabled={sending}
+                className="flex min-h-11 items-center justify-between gap-3 rounded-xl border border-plum-border/50 bg-white px-3 text-left text-sm font-medium text-body-dark transition hover:border-plum/50 hover:bg-plum-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-plum"
+              >
+                <span>{label}</span>
+                <HiArrowLeft className="h-4 w-4 rotate-180 text-plum" aria-hidden="true" />
+              </button>
+            ))}
+          </div>
+        )}
+        <div ref={messagesEndRef} />
+      </div>
+
+      <form
+        className="border-t border-plum-border/40 bg-white p-3"
+        onSubmit={(event) => {
+          event.preventDefault();
+          sendMessage();
+        }}
+      >
+        <label className="sr-only" htmlFor={fullPage ? "help-message-full" : "help-message-popup"}>
+          Your question
+        </label>
+        <div className="flex items-end gap-2">
+          <textarea
+            ref={inputRef}
+            id={fullPage ? "help-message-full" : "help-message-popup"}
+            value={draft}
+            onChange={(event) => setDraft(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+              }
+            }}
+            maxLength={500}
+            rows={1}
+            placeholder="Ask about vocabulary, grammar, or SpellyCraft…"
+            className="max-h-28 min-h-11 flex-1 resize-y rounded-xl border border-plum-border/60 px-3 py-2.5 text-sm text-body-dark outline-none transition placeholder:text-muted-label/80 focus:border-plum focus:ring-2 focus:ring-plum/15"
+          />
+          <button
+            type="submit"
+            disabled={!draft.trim() || sending}
+            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl bg-plum text-white transition hover:bg-plum-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-plum disabled:cursor-not-allowed disabled:opacity-50"
+            aria-label="Send message"
+          >
+            <HiPaperAirplane className="h-5 w-5" aria-hidden="true" />
+          </button>
+        </div>
+        <p className="mt-2 text-center text-xs text-muted-label" role="status">
+          {sending ? "Thinking…" : "Only vocabulary, grammar, and platform guidance are in scope."}
+        </p>
+      </form>
+      <p className="border-t border-plum-border/30 px-3 py-2 text-center text-[11px] leading-4 text-muted-label">
+        Provider integrations: Google AI Studio (Gemini) and NVIDIA NIM. We appreciate their developer access programs; free quotas and terms may change.
+      </p>
+      <p className="px-3 pb-2 text-center text-[11px] leading-4 text-muted-label">
+        Chat isn’t stored by SpellyCraft. Provider data handling follows their terms; don’t share sensitive details.
+      </p>
+    </section>
+  );
+}
+
+export default function HelpAssistant() {
+  const { isAuthenticated, loading } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    setOpen(false);
+  }, [location.pathname]);
+
+  if (loading || !isAuthenticated || location.pathname === "/help") return null;
+
+  function openAssistant() {
+    if (window.matchMedia("(max-width: 767px)").matches) {
+      navigate("/help", {
+        state: { from: `${location.pathname}${location.search}` },
+      });
+      return;
+    }
+    setOpen((current) => !current);
+  }
+
+  return (
+    <div className="fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] right-4 z-[60] flex flex-col items-end gap-3 md:bottom-6 md:right-6">
+      {open && (
+        <div
+          id="help-assistant-panel"
+          className="origin-bottom-right animate-[imlaaSlideIn_180ms_ease-out]"
+          role="dialog"
+          aria-modal="false"
+          aria-label="SpellyCraft help assistant"
+        >
+          <HelpChat onClose={() => setOpen(false)} />
+        </div>
+      )}
+      <button
+        type="button"
+        onClick={openAssistant}
+        aria-expanded={open}
+        aria-controls={open ? "help-assistant-panel" : undefined}
+        aria-label={open ? "Close SpellyCraft help" : "Open SpellyCraft help"}
+        className="group relative inline-flex min-h-14 min-w-14 items-center justify-center rounded-full bg-plum text-white shadow-xl shadow-plum/25 transition duration-200 hover:-translate-y-1 hover:bg-plum-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-plum"
+      >
+        {open ? (
+          <HiXMark className="h-6 w-6" aria-hidden="true" />
+        ) : (
+          <HiChatBubbleLeftRight className="h-6 w-6" aria-hidden="true" />
+        )}
+        <span className="pointer-events-none absolute bottom-full right-0 mb-3 hidden whitespace-nowrap rounded-lg bg-body-dark px-3 py-2 text-xs font-medium text-white opacity-0 shadow-lg transition group-hover:opacity-100 md:block">
+          Ask SpellyCraft
+        </span>
+      </button>
+    </div>
+  );
+}
+
+export function HelpAssistantPage() {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  function returnToPreviousPage() {
+    navigate(location.state?.from || "/", { replace: true });
+  }
+
+  return (
+    <main className="min-h-[100dvh] bg-[#f7f5f4] px-3 py-3 sm:px-6 sm:py-6">
+      <div className="mx-auto flex min-h-[calc(100dvh-1.5rem)] max-w-3xl flex-col sm:min-h-[calc(100dvh-3rem)]">
+        <div className="mb-3 flex items-center justify-between gap-3 px-1 sm:mb-5">
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-plum text-white shadow-sm">
+              <HiAcademicCap className="h-6 w-6" aria-hidden="true" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-body-dark">SpellyCraft</p>
+              <p className="text-xs text-muted-label">Learning support</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={returnToPreviousPage}
+            className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-plum-border/60 bg-white px-3 text-sm font-semibold text-body-dark transition hover:border-plum hover:text-plum focus-visible:outline focus-visible:outline-2 focus-visible:outline-plum"
+          >
+            <HiArrowLeft className="h-4 w-4" aria-hidden="true" />
+            <span className="hidden sm:inline">Back to SpellyCraft</span>
+            <span className="sm:hidden">Back</span>
+          </button>
+        </div>
+        <div className="min-h-0 flex-1">
+          <HelpChat fullPage />
+        </div>
+        <p className="pt-3 text-center text-xs text-muted-label">
+          <HiBookOpen className="mr-1 inline h-3.5 w-3.5" aria-hidden="true" />
+          <HiBookOpen className="mr-1 inline h-3.5 w-3.5" aria-hidden="true" />
+          Vocabulary, grammar, and platform help only.
+        </p>
+      </div>
+    </main>
+  );
+}

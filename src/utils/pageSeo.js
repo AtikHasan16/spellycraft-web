@@ -39,6 +39,12 @@ const PAGE_METADATA = {
     description:
       "Support SpellyCraft and help make free English vocabulary, spelling, and grammar practice available to learners.",
   },
+  "/help": {
+    title: "SpellyCraft Help",
+    description:
+      "Get help with English vocabulary, grammar practice, and using the SpellyCraft learning platform.",
+    robots: "noindex, nofollow",
+  },
   "/reset-password": {
     title: "Reset Your Password",
     description: "Securely reset your SpellyCraft account password.",
