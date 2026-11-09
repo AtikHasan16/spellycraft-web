@@ -5,9 +5,19 @@ const BRAND = "SpellyCraft";
 
 const PAGE_METADATA = {
   "/": {
-    title: "IELTS Vocabulary, Spelling & Grammar Practice",
+    title: "Secure Band 8.0+ in IELTS Writing & Listening",
     description:
-      "Build IELTS vocabulary, improve English spelling, and practise grammar with SpellyCraft's interactive learning tools.",
+      "Master academic English orthography, spelling recall, and vocabulary with SpellyCraft's phonemic speech practice and lexical mastery workspace.",
+  },
+  "/login": {
+    title: "Sign In",
+    description: "Sign in securely to continue your SpellyCraft IELTS vocabulary and spelling practice.",
+    robots: "noindex, nofollow",
+  },
+  "/register": {
+    title: "Create Your Account",
+    description: "Create a SpellyCraft account to save your vocabulary, spelling, and IELTS practice progress.",
+    robots: "noindex, nofollow",
   },
   "/about": {
     title: "About SpellyCraft",

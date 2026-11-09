@@ -6,6 +6,7 @@ import CapacityGuardModal from "./components/CapacityGuardModal";
 import SeoManager from "./components/SeoManager";
 
 const LandingPage = lazy(() => import("./pages/LandingPage"));
+const AuthPage = lazy(() => import("./pages/AuthPage"));
 const WorkspaceLayout = lazy(() => import("./components/WorkspaceLayout"));
 const DashboardPage = lazy(() => import("./pages/DashboardPage"));
 const FlashcardPage = lazy(() => import("./pages/FlashcardPage"));
@@ -56,7 +57,7 @@ function ProtectedRoute({ children, requiredRole }) {
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/login" replace />;
   }
 
   if (requiredRole === "admin" && role !== "admin") {
@@ -75,6 +76,8 @@ export default function App() {
         <Routes>
           {/* Public Landing & Information */}
           <Route path="/" element={<PageRoute component={LandingPage} />} />
+          <Route path="/login" element={<PageRoute component={AuthPage} />} />
+          <Route path="/register" element={<PageRoute component={AuthPage} />} />
           <Route path="/about" element={<PageRoute component={AboutPage} />} />
           <Route path="/contact" element={<PageRoute component={ContactPage} />} />
           <Route path="/contribute" element={<PageRoute component={ContributePage} />} />

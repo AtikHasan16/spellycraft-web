@@ -366,6 +366,30 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+@keyframes landing-error-pulse {
+  0%,
+  100% {
+    text-decoration-color: rgba(253, 164, 175, 0.4);
+    text-shadow: 0 0 0 transparent;
+  }
+  50% {
+    text-decoration-color: rgba(253, 164, 175, 1);
+    text-shadow: 0 0 14px rgba(251, 113, 133, 0.25);
+  }
+}
+
+.landing-corrected-word {
+  text-decoration: line-through;
+  text-decoration-thickness: 2px;
+  animation: landing-error-pulse 2.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-corrected-word {
+    animation: none;
+  }
+}
+
 /* Custom minimal scrollbar */
 ::-webkit-scrollbar {
   width: 5px;
