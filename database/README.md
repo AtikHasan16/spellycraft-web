@@ -9,6 +9,9 @@
 - `migrations/20261108_add_nvidia_nim_ai_provider.sql` allows the NVIDIA NIM provider identifier in AI usage analytics; apply it after the AI vocabulary generation migration.
 - `migrations/20261108_clear_ai_usage_errors.sql` adds the admin-only RPC used by the AI Usage tab to permanently clear failed-attempt logs while preserving successful usage records and vocabulary.
 - `migrations/20261109_resource_collections.sql` creates public and authenticated-only resource metadata collections with admin-only writes and Google Drive link constraints. It does not upload or delete Drive files.
+- `migrations/20261109_community_hub.sql` adds the moderated community request board, contributor recognition, developer applications/profiles, and private project proposals. Public tickets and profiles are published only through the defined consent, approval, and row-level security rules; it adds no Express CRUD endpoints.
+- `migrations/20261109_community_stats.sql` must be applied after the community hub migration and adds an authenticated aggregate-only RPC for community counts; it returns no ticket, profile, or other user-level records. Roll back the stats RPC before rolling back the community hub migration.
+- `COMMUNITY_SETUP.md` documents migration order, frontend-to-Supabase data paths, schema-cache refresh, verification queries, and rollback cautions for the community features.
 
 For a new project, run `schema.sql`, then run `security_policies.sql` to install
 the role-checking helper before applying migrations that reference

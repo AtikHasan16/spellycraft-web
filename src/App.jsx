@@ -25,6 +25,11 @@ const NotFoundPage = lazy(() => import("./pages/NotFoundPage"));
 const ResetPasswordPage = lazy(() => import("./pages/ResetPasswordPage"));
 const ResourcesPage = lazy(() => import("./pages/ResourcesPage"));
 const PrivateResourcesPage = lazy(() => import("./pages/PrivateResourcesPage"));
+const DeveloperApplicationPage = lazy(() =>
+  import("./pages/DeveloperWorkspacePage").then((module) => ({
+    default: module.DeveloperApplicationPage,
+  })),
+);
 
 function PageRoute({ component: Page }) {
   return (
@@ -84,7 +89,6 @@ export default function App() {
           <Route path="/about" element={<PageRoute component={AboutPage} />} />
           <Route path="/resources" element={<PageRoute component={ResourcesPage} />} />
           <Route path="/contact" element={<PageRoute component={ContactPage} />} />
-          <Route path="/contribute" element={<PageRoute component={ContributePage} />} />
           <Route path="/support-us" element={<PageRoute component={SupportUsPage} />} />
           <Route path="/reset-password" element={<PageRoute component={ResetPasswordPage} />} />
 
@@ -108,7 +112,13 @@ export default function App() {
             <Route path="vocab" element={<Navigate to="/workspace/flashcard" replace />} />
             <Route path="grammar" element={<PageRoute component={GrammarPage} />} />
             <Route path="grammar/lesson/:topicId?" element={<PageRoute component={GrammarLessonPage} />} />
-            <Route path="contribute" element={<PageRoute component={ContributePage} />} />
+            <Route path="contribute" element={<Navigate to="/workspace/community" replace />} />
+            <Route path="community" element={<PageRoute component={ContributePage} />} />
+            <Route path="developer" element={<Navigate to="/workspace/community?tab=developer" replace />} />
+            <Route
+              path="developer/application"
+              element={<PageRoute component={DeveloperApplicationPage} />}
+            />
             <Route path="support-us" element={<PageRoute component={SupportUsPage} />} />
             <Route
               path="upload"

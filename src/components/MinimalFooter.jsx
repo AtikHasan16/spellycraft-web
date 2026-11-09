@@ -6,7 +6,7 @@ import { Link } from "react-router";
  * - Minimal, distraction-free design
  * - Copyright & domain credit
  * - Microsoft Edge TTS technology attribution
- * - Navigation links (About, Contact, Support)
+ * - Navigation links (About, Contact, Resources, Support, Community)
  */
 export default function MinimalFooter() {
   return (
@@ -32,6 +32,9 @@ export default function MinimalFooter() {
           </Link>
           <Link to="/contact" className="hover:text-plum transition">
             Contact
+          </Link>
+          <Link to="/workspace/community" className="hover:text-plum transition">
+            Community
           </Link>
           <Link to="/support-us" className="text-plum hover:underline font-bold transition">
             Support

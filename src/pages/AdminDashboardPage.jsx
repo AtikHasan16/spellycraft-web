@@ -8,6 +8,7 @@ import AuditLogTable from "../features/admin/AuditLogTable";
 import UserInspector from "../features/admin/UserInspector";
 import UserDirectory from "../features/admin/UserDirectory";
 import AiUsageTab from "../features/admin/AiUsageTab";
+import CommunityModerationTab from "../features/admin/CommunityModerationTab";
 import { useModalEffects } from "../hooks/useModalEffects";
 import {
   HiUsers,
@@ -293,6 +294,7 @@ export default function AdminDashboardPage() {
         {[
           ["overview", "Overview"],
           ["ai-usage", "AI Usage"],
+          ["community", "Community"],
         ].map(([tab, label]) => (
           <button
             key={tab}
@@ -312,6 +314,8 @@ export default function AdminDashboardPage() {
 
       {activeTab === "ai-usage" ? (
         <AiUsageTab />
+      ) : activeTab === "community" ? (
+        <CommunityModerationTab />
       ) : (
         <>
       {/* ==================================================== */}

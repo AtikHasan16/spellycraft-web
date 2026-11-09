@@ -6,15 +6,13 @@ import {
   HiPencilSquare,
   HiAcademicCap,
   HiCloudArrowUp,
-  HiCog6Tooth,
   HiFolder,
   HiArrowRightOnRectangle,
-  HiBeaker,
+  HiUserGroup,
 } from "react-icons/hi2";
 import { showConfirmModal } from "../utils/sweetalert";
 import { getAvatarColor, getInitials } from "../utils/avatarColors";
 import logo from "../assets/logo.png";
-import { FaBoxOpen } from "react-icons/fa";
 import { MdMonitorHeart } from "react-icons/md";
 import { MdAdminPanelSettings } from "react-icons/md";
 
@@ -98,10 +96,10 @@ export default function NavigationDock() {
       show: isAdmin,
     },
     {
-      to: "/workspace/contribute",
-      label: "Contribute",
-      icon: HiBeaker,
-      show: isAdmin,
+      to: "/workspace/community",
+      label: "Community",
+      icon: HiUserGroup,
+      show: true,
     },
   ];
 
