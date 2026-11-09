@@ -2,13 +2,13 @@ import { useEffect, useRef, useState } from "react";
 import {
   HiAcademicCap,
   HiArrowLeft,
+  HiArrowUpRight,
   HiBookOpen,
-  HiChatBubbleLeftRight,
   HiInformationCircle,
   HiPaperAirplane,
-  HiSparkles,
   HiXMark,
 } from "react-icons/hi2";
+import { SiGoogleassistant } from "react-icons/si";
 import { Link, useLocation, useNavigate } from "react-router";
 import { useAuth } from "../../context/AuthContext";
 import { sendHelpAssistantMessage } from "../../services/aiService";
@@ -20,6 +20,88 @@ const SUGGESTIONS = [
   { label: "Explain a grammar topic", prompt: "Can you help me with grammar?" },
   { label: "Find my study progress", prompt: "Where can I find my progress?" },
 ];
+
+const LABEL_STYLES = {
+  // bold headline
+  meaning: "headline",
+  answer: "headline",
+  "correct spelling": "headline",
+  corrected: "headline",
+  word: "headline",
+  difference: "headline",
+  rule: "headline",
+  // semibold chips
+  synonyms: "chips",
+  antonyms: "chips",
+  "common misspellings": "chips",
+  // everything else renders as normal text
+};
+
+function parseSections(text) {
+  const clean = text.replace(/\*\*|__/g, "");
+  const sections = clean
+    .split(/\n\s*-{3,}\s*\n/)
+    .map((block) => block.trim())
+    .filter(Boolean)
+    .map((block) => {
+      const match = block.match(/^([A-Za-z][A-Za-z ]{1,24}):\s*([\s\S]+)$/);
+      return match
+        ? { label: match[1].trim(), value: match[2].trim() }
+        : { label: null, value: block };
+    });
+  return sections.some((s) => s.label) ? sections : null;
+}
+
+function SectionValue({ label, value }) {
+  const style = LABEL_STYLES[label?.toLowerCase()] ?? "plain";
+
+  if (style === "headline") {
+    return <p className="text-base font-bold text-body-dark">{value}</p>;
+  }
+  if (style === "chips") {
+    const items = value
+      .split(/[,;]/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+    return (
+      <div className="flex flex-wrap gap-1.5">
+        {items.map((item) => (
+          <span
+            key={item}
+            className="rounded-full bg-plum-light px-2.5 py-1 text-sm font-semibold text-plum"
+          >
+            {item}
+          </span>
+        ))}
+      </div>
+    );
+  }
+  return <p className="font-normal text-body-dark">{value}</p>;
+}
+
+function FormattedResponse({ text }) {
+  const sections = parseSections(text);
+
+  if (!sections) {
+    return <p className="whitespace-pre-wrap text-body-dark">{text}</p>;
+  }
+
+  return (
+    <div>
+      {sections.map(({ label, value }, index) => (
+        <div key={`${label}-${index}`}>
+          {index > 0 && <hr className="my-3 border-plum-border/40" />}
+          {label && (
+            <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-label">
+              {label}
+            </p>
+          )}
+          <SectionValue label={label} value={value} />
+        </div>
+      ))}
+    </div>
+  );
+}
 
 function ChatMessage({ message }) {
   const isAssistant = message.role === "assistant";
@@ -33,7 +115,11 @@ function ChatMessage({ message }) {
             : "rounded-br-md bg-plum text-white"
         }`}
       >
-        <p>{message.text}</p>
+        {isAssistant && message.formatted ? (
+          <FormattedResponse text={message.text} />
+        ) : (
+          <p className="whitespace-pre-wrap">{message.text}</p>
+        )}
         {message.link && (
           <Link
             to={message.link.to}
@@ -48,6 +134,8 @@ function ChatMessage({ message }) {
 }
 
 function HelpChat({ fullPage = false, onClose }) {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [messages, setMessages] = useState([]);
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
@@ -106,7 +194,7 @@ function HelpChat({ fullPage = false, onClose }) {
       ]);
       setMessages((current) => [
         ...current,
-        { id: secureRandomUUID(), role: "assistant", text: answer },
+        { id: secureRandomUUID(), role: "assistant", text: answer, formatted: true },
       ]);
     } catch (error) {
       console.error("Could not get a help assistant response:", error);
@@ -130,32 +218,46 @@ function HelpChat({ fullPage = false, onClose }) {
       className={`flex min-h-0 flex-col overflow-hidden border border-plum-border/70 bg-white shadow-2xl shadow-body-dark/15 ${
         fullPage
           ? "h-full rounded-2xl"
-          : "h-[min(39rem,calc(100dvh-8rem))] w-[min(24rem,calc(100vw-2rem))] rounded-2xl"
+          : "h-[min(39rem,calc(100dvh-8rem))] w-[min(30rem,calc(100vw-2rem))] rounded-2xl"
       }`}
       aria-label="SpellyCraft help chat"
     >
       <header className="flex items-center justify-between gap-3 bg-plum px-4 py-4 text-white">
         <div className="flex min-w-0 items-center gap-3">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/15">
-            <HiSparkles className="h-6 w-6" aria-hidden="true" />
+            <SiGoogleassistant className="h-6 w-6" aria-hidden="true" />
           </div>
           <div className="min-w-0">
             <h1 className="truncate text-base font-bold">SpellyCraft Assistant</h1>
-            <p className="mt-0.5 text-xs text-white/75">
-              Vocabulary · Grammar · Platform help
-            </p>
           </div>
         </div>
-        {onClose && (
-          <button
-            type="button"
-            onClick={onClose}
-            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl text-white/90 transition hover:bg-white/15 hover:text-white focus-visible:outline-2 focus-visible:outline-white"
-            aria-label="Close help chat"
-          >
-            <HiXMark className="h-6 w-6" aria-hidden="true" />
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {fullPage ? null : (
+            <button
+              type="button"
+              onClick={() =>
+                navigate("/help", {
+                  state: { from: `${location.pathname}${location.search}` },
+                })
+              }
+              className="inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-white/15 px-3 text-xs font-medium text-white transition hover:bg-white/25 focus-visible:outline-2 focus-visible:outline-white"
+              aria-label="Open full chat page"
+            >
+              <HiArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
+              <span className="hidden sm:inline">Open Chat</span>
+            </button>
+          )}
+          {onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl text-white/90 transition hover:bg-white/15 hover:text-white focus-visible:outline-2 focus-visible:outline-white"
+              aria-label="Close help chat"
+            >
+              <HiXMark className="h-6 w-6" aria-hidden="true" />
+            </button>
+          )}
+        </div>
       </header>
 
       <div className="flex items-center gap-2 border-b border-plum-border/40 bg-plum-light px-4 py-2.5 text-xs text-plum">
@@ -247,66 +349,68 @@ function HelpChat({ fullPage = false, onClose }) {
             : "Only vocabulary, grammar, and platform guidance are in scope."}
         </p>
       </form>
-              <div className="border-t border-plum-border/30 bg-white">
-                <div className="flex items-center justify-between px-3 py-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowProviderInfo(true)}
-                    className="text-xs font-medium text-plum hover:text-plum-hover focus-visible:outline focus-visible:outline-plum"
-                    aria-label="Learn more about AI providers and privacy"
-                  >
-                    Learn more
-                    <HiInformationCircle className="inline h-3.5 w-3.5 ml-1" aria-hidden="true" />
-                  </button>
-                </div>
-              </div>
-              {showProviderInfo && (
-                <div
-                  className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4"
-                  role="dialog"
-                  aria-modal="true"
-                  aria-labelledby="provider-info-title"
-                >
-                  <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl">
-                    <div className="flex items-start justify-between">
-                      <h2 id="provider-info-title" className="text-base font-bold text-body-dark">
-                        AI Providers & Privacy
-                      </h2>
-                      <button
-                        type="button"
-                        onClick={() => setShowProviderInfo(false)}
-                        className="text-muted-label hover:text-body-dark focus-visible:outline focus-visible:outline-plum"
-                        aria-label="Close"
-                      >
-                        <HiXMark className="h-5 w-5" aria-hidden="true" />
-                      </button>
-                    </div>
-                    <div className="mt-4 space-y-3 text-sm text-muted-label">
-                      <p className="leading-5">
-                        <strong className="text-body-dark">Provider integrations:</strong> Google AI Studio (Gemini)
-                        and NVIDIA NIM. We appreciate their developer access programs; free quotas and terms may
-                        change.
-                      </p>
-                      <p className="leading-5">
-                        <strong className="text-body-dark">Chat isn't stored by SpellyCraft.</strong> Provider
-                        data handling follows their terms; don't share sensitive details.
-                      </p>
-                    </div>
-                    <div className="mt-5">
-                      <button
-                        type="button"
-                        onClick={() => setShowProviderInfo(false)}
-                        className="w-full min-h-11 rounded-xl bg-plum text-white font-semibold transition hover:bg-plum-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-plum"
-                      >
-                        Got it
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </section>
-          );
-        }
+      <div className="border-t border-plum-border/30 bg-white">
+        <div className="flex items-center justify-between px-3 py-2">
+          <button
+            type="button"
+            onClick={() => setShowProviderInfo(true)}
+            className="text-xs font-medium text-plum hover:text-plum-hover focus-visible:outline focus-visible:outline-plum"
+            aria-label="Learn more about AI providers and privacy"
+          >
+            Learn more
+            <HiInformationCircle className="inline h-3.5 w-3.5 ml-1" aria-hidden="true" />
+          </button>
+        </div>
+      </div>
+      {showProviderInfo && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="provider-info-title"
+        >
+          <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl">
+            <div className="flex items-start justify-between">
+              <h2 id="provider-info-title" className="text-base font-bold text-body-dark">
+                AI Providers & Privacy
+              </h2>
+              <button
+                type="button"
+                onClick={() => setShowProviderInfo(false)}
+                className="text-muted-label hover:text-body-dark focus-visible:outline focus-visible:outline-plum"
+                aria-label="Close"
+              >
+                <HiXMark className="h-5 w-5" aria-hidden="true" />
+              </button>
+            </div>
+            <div className="mt-4 space-y-3 text-sm text-muted-label">
+              <p className="leading-5">
+                <strong className="text-body-dark">Provider integrations:</strong> Google
+                AI Studio (Gemini) and NVIDIA NIM. We appreciate their developer access
+                programs; free quotas and terms may change.
+              </p>
+              <p className="leading-5">
+                <strong className="text-body-dark">
+                  Chat isn't stored by SpellyCraft.
+                </strong>{" "}
+                Provider data handling follows their terms; don't share sensitive details.
+              </p>
+            </div>
+            <div className="mt-5">
+              <button
+                type="button"
+                onClick={() => setShowProviderInfo(false)}
+                className="w-full min-h-11 rounded-xl bg-plum text-white font-semibold transition hover:bg-plum-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-plum"
+              >
+                Got it
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
 
 export default function HelpAssistant() {
   const { isAuthenticated, loading } = useAuth();
@@ -354,7 +458,7 @@ export default function HelpAssistant() {
         {open ? (
           <HiXMark className="h-6 w-6" aria-hidden="true" />
         ) : (
-          <HiChatBubbleLeftRight className="h-6 w-6" aria-hidden="true" />
+          <SiGoogleassistant className="h-6 w-6" aria-hidden="true" />
         )}
         <span className="pointer-events-none absolute bottom-full right-0 mb-3 hidden whitespace-nowrap rounded-lg bg-body-dark px-3 py-2 text-xs font-medium text-white opacity-0 shadow-lg transition group-hover:opacity-100 md:block">
           Ask SpellyCraft
@@ -399,7 +503,6 @@ export function HelpAssistantPage() {
           <HelpChat fullPage />
         </div>
         <p className="pt-3 text-center text-xs text-muted-label">
-          <HiBookOpen className="mr-1 inline h-3.5 w-3.5" aria-hidden="true" />
           <HiBookOpen className="mr-1 inline h-3.5 w-3.5" aria-hidden="true" />
           Vocabulary, grammar, and platform help only.
         </p>

@@ -44,16 +44,25 @@ async function fetchWithTimeout(url, options, timeoutMs, operation) {
   }
 }
 
-async function postAuthenticated(path, body, { timeoutMs = GENERATION_TIMEOUT_MS, operation = "AI generation" } = {}) {
+async function postAuthenticated(
+  path,
+  body,
+  { timeoutMs = GENERATION_TIMEOUT_MS, operation = "AI generation" } = {},
+) {
   const [baseUrl, token] = await Promise.all([getAiServiceUrl(), getAccessToken()]);
-  const response = await fetchWithTimeout(`${baseUrl}${path}`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
+  const response = await fetchWithTimeout(
+    `${baseUrl}${path}`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
     },
-    body: JSON.stringify(body),
-  }, timeoutMs, operation);
+    timeoutMs,
+    operation,
+  );
   const payload = await response.json().catch(() => null);
   if (!response.ok || !payload?.success) {
     const error = new Error(
@@ -89,27 +98,32 @@ export function sendHelpAssistantMessage(messages) {
 }
 
 export function generateVocabularyMeaning(vocabularyId, languageCode) {
-  return postAuthenticated("/api/ai/meaning", { vocabularyId, languageCode })
-    .then((result) => {
+  return postAuthenticated("/api/ai/meaning", { vocabularyId, languageCode }).then(
+    (result) => {
       invalidateVocabularyCache();
       return result;
-    });
+    },
+  );
 }
 
 export function generateVocabularyDefinition(vocabularyId) {
-  return postAuthenticated("/api/ai/definition", { vocabularyId })
-    .then((result) => {
-      invalidateVocabularyCache();
-      return result;
-    });
+  return postAuthenticated("/api/ai/definition", { vocabularyId }).then((result) => {
+    invalidateVocabularyCache();
+    return result;
+  });
 }
 
 export async function getAiUsageAnalytics() {
   const baseUrl = getAiServiceUrl();
   const token = await getAccessToken();
-  const response = await fetchWithTimeout(`${baseUrl}/api/admin/ai-usage`, {
-    headers: { Authorization: `Bearer ${token}` },
-  }, ANALYTICS_TIMEOUT_MS, "AI analytics request");
+  const response = await fetchWithTimeout(
+    `${baseUrl}/api/admin/ai-usage`,
+    {
+      headers: { Authorization: `Bearer ${token}` },
+    },
+    ANALYTICS_TIMEOUT_MS,
+    "AI analytics request",
+  );
   const payload = await response.json().catch(() => null);
   if (!response.ok || !payload?.success) {
     const error = new Error(
