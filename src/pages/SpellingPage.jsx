@@ -756,6 +756,23 @@ export default function SpellingPage() {
   };
 
   const filteredGroups = dynamicGroups.filter((g) => g.part === activePart);
+
+// Pagination for corpus groups (6 per page)
+const GROUPS_PER_PAGE = 6;
+const [groupsPage, setGroupsPage] = useState(0);
+const totalGroupsPages = Math.ceil(filteredGroups.length / GROUPS_PER_PAGE);
+const paginatedGroups = filteredGroups.slice(
+  groupsPage * GROUPS_PER_PAGE,
+  (groupsPage + 1) * GROUPS_PER_PAGE
+);
+
+const goToPrevGroupsPage = () => setGroupsPage((p) => Math.max(0, p - 1));
+const goToNextGroupsPage = () => setGroupsPage((p) => Math.min(totalGroupsPages - 1, p + 1));
+
+// Reset page when activePart changes
+useEffect(() => {
+  setGroupsPage(0);
+}, [activePart]);
   const activeTopic = selectedGroup?.title || "Academic Word List: Sublist A";
   const corpusMastery = getSpellingMasterySummary(visibleMastery, activeTopic);
   const quizMastery = quizTopic
@@ -871,11 +888,11 @@ export default function SpellingPage() {
                   </div>
                 ))
               )
-            ) : filteredGroups.length === 0 ? (
+            ) : paginatedGroups.length === 0 ? (
               <p className="imlaa-card md:col-span-2 lg:col-span-3 p-6 text-center text-muted-label">
                 No vocabulary sets are available in this tab yet.
               </p>
-            ) : filteredGroups.map((group) => (
+                        ) : paginatedGroups.map((group) => (
               <div
                 key={group.id}
                 className="imlaa-card p-6 flex flex-col justify-between hover:shadow-md transition-all duration-200 border border-plum/20"
@@ -963,6 +980,33 @@ export default function SpellingPage() {
               </div>
             ))}
           </div>
+
+          {/* Pagination Controls for Corpus Groups */}
+          {totalGroupsPages > 1 && (
+            <div className="flex items-center justify-center gap-3 mt-6">
+              <button
+                type="button"
+                onClick={goToPrevGroupsPage}
+                disabled={groupsPage === 0}
+                className="imlaa-btn-secondary min-h-11 min-w-11 p-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                aria-label="Previous page"
+              >
+                <HiChevronLeft className="w-5 h-5" />
+              </button>
+              <span className="text-sm font-semibold text-body-dark px-4">
+                Page {groupsPage + 1} of {totalGroupsPages}
+              </span>
+              <button
+                type="button"
+                onClick={goToNextGroupsPage}
+                disabled={groupsPage === totalGroupsPages - 1}
+                className="imlaa-btn-secondary min-h-11 min-w-11 p-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                aria-label="Next page"
+              >
+                <HiChevronRight className="w-5 h-5" />
+              </button>
+            </div>
+          )}
         </div>
       )}
 
