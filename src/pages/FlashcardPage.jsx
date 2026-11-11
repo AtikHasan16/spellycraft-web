@@ -1,5 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import RandomQuizSetupModal from "../components/RandomQuizSetupModal";
+import FlashcardHeader from "../components/flashcards/FlashcardHeader";
+import FlashcardSetsView from "../components/flashcards/FlashcardSetsView";
+import FlashcardDrillView from "../components/flashcards/FlashcardDrillView";
+import FlashcardQuizView from "../components/flashcards/FlashcardQuizView";
+import FlashcardSessionSummary from "../components/flashcards/FlashcardSessionSummary";
 import { useCountdownTimer } from "../hooks/useCountdownTimer";
 import { useModalEffects } from "../hooks/useModalEffects";
 import apiClient from "../services/apiClient";
@@ -18,47 +23,33 @@ import {
   MEANING_LANGUAGES,
 } from "../utils/meaningLanguages";
 import {
-  getFlashcardMasterySummary,
   getFlashcardMistakes,
   loadFlashcardMastery,
   recordFlashcardAttempt,
   saveFlashcardMastery,
 } from "../utils/flashcardMastery";
-import AudioEqualizer from "../components/AudioEqualizer";
 import {
-  HiSpeakerWave,
-  HiChevronLeft,
-  HiChevronRight,
-  HiCheckCircle,
-  HiXCircle,
-  HiClock,
-  HiArrowLeft,
-  HiSparkles,
-  HiLanguage,
-  HiUser,
-  HiAcademicCap,
-} from "react-icons/hi2";
+  buildFlashcardGroups,
+  paginateFlashcardGroups,
+} from "../utils/flashcardGroups";
 
-// Corpus groups matching design
 const PARTS = ["All Active", "Listening Vocabs", "Uploaded", "Mistakes"];
 
-// Pagination: how many corpus cards to show at a time
-const GROUPS_PER_PAGE = 6;
-
-const LANGUAGE_TRANSLATIONS = Object.fromEntries(
-  MEANING_LANGUAGES.map(({ code, label }) => [code, label]),
-);
-
+/**
+ * Flashcard page (src/pages/FlashcardPage.jsx)
+ * Orchestration only: data fetching, drill/quiz state, persistence, and
+ * delegation to presentational components under src/components/flashcards/.
+ */
 export default function FlashcardPage() {
   const { user, isAdmin } = useAuth();
 
-  // Navigation & View States: 'sets' | 'drill' | 'finished' | 'quiz'
+  // Navigation & view state: 'sets' | 'drill' | 'finished' | 'quiz'
   const [activePart, setActivePart] = useState("All Active");
   const [selectedGroup, setSelectedGroup] = useState(null);
   const [viewMode, setViewMode] = useState("sets");
   const [groupsPage, setGroupsPage] = useState(0);
 
-  // Corpus & Word States
+  // Corpus & drill state
   const [words, setWords] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
@@ -70,14 +61,13 @@ export default function FlashcardPage() {
   const [selectedLanguage, setSelectedLanguage] = useState("en");
   const [generationInProgress, setGenerationInProgress] = useState(null);
 
-  // Flashcard Answer Tracking
-  // Per-session counters
+  // Per-session tally
   const [sessionKnew, setSessionKnew] = useState([]);
   const [sessionUnknown, setSessionUnknown] = useState([]);
   const [sessionForgot, setSessionForgot] = useState([]);
   const [hasAnsweredCurrent, setHasAnsweredCurrent] = useState(false);
 
-  // Persistent Progress Data from DB
+  // Persisted progress
   const [vocabStats, setVocabStats] = useState(null);
   const [cloudProgressByTopic, setCloudProgressByTopic] = useState({});
   const [masteryRecords, setMasteryRecords] = useState({});
@@ -89,6 +79,27 @@ export default function FlashcardPage() {
   const rateTimeoutRef = useRef(null);
   const [drillRequest, setDrillRequest] = useState(null);
 
+  // Mistakes-only drill
+  const [mistakesOnly, setMistakesOnly] = useState(false);
+  const [mistakesList, setMistakesList] = useState([]);
+
+  // Random quiz state
+  const [quizModalOpen, setQuizModalOpen] = useState(false);
+  const [quizTopic, setQuizTopic] = useState(null);
+  const [quizQuantity, setQuizQuantity] = useState(10);
+  const [quizTimerMinutes, setQuizTimerMinutes] = useState(0);
+  const [quizQuestions, setQuizQuestions] = useState([]);
+  const [quizIndex, setQuizIndex] = useState(0);
+  const [quizScore, setQuizScore] = useState(0);
+  const [quizTimeRemaining, setQuizTimeRemaining] = useState(0);
+  const [quizFinished, setQuizFinished] = useState(false);
+  const [quizUserAnswers, setQuizUserAnswers] = useState([]);
+  const { startTimer: startQuizTimer, stopTimer: stopQuizTimer } = useCountdownTimer(
+    setQuizTimeRemaining,
+    () => setQuizFinished(true),
+  );
+  useModalEffects(quizModalOpen, setQuizModalOpen);
+
   useEffect(() => {
     isMountedRef.current = true;
     return () => {
@@ -97,6 +108,7 @@ export default function FlashcardPage() {
     };
   }, []);
 
+  // Load the learner's saved meaning language once per user.
   useEffect(() => {
     let active = true;
     async function loadPreferredLanguage() {
@@ -149,28 +161,6 @@ export default function FlashcardPage() {
     }
   }, [user?.id]);
 
-  // Practice Mistakes Mode
-  const [mistakesOnly, setMistakesOnly] = useState(false);
-  const [mistakesList, setMistakesList] = useState([]);
-
-  // Random Quiz States
-  const [quizModalOpen, setQuizModalOpen] = useState(false);
-  const [quizTopic, setQuizTopic] = useState(null);
-  const [quizQuantity, setQuizQuantity] = useState(10); // 10 | 20 | 50
-  const [quizTimerMinutes, setQuizTimerMinutes] = useState(0); // 0 (untimed) | 1 | 2 | 5 | 10
-  const [quizQuestions, setQuizQuestions] = useState([]);
-  const [quizIndex, setQuizIndex] = useState(0);
-  const [quizScore, setQuizScore] = useState(0);
-  const [quizTimeRemaining, setQuizTimeRemaining] = useState(0);
-  const [quizFinished, setQuizFinished] = useState(false);
-  const [quizUserAnswers, setQuizUserAnswers] = useState([]);
-  const { startTimer: startQuizTimer, stopTimer: stopQuizTimer } = useCountdownTimer(
-    setQuizTimeRemaining,
-    () => setQuizFinished(true),
-  );
-  useModalEffects(quizModalOpen, setQuizModalOpen);
-
-  // Fetch vocabulary statistics
   const fetchStats = useCallback(async () => {
     try {
       const res = await apiClient.get("/vocabulary/stats", {
@@ -190,7 +180,6 @@ export default function FlashcardPage() {
     }
   }, [user]);
 
-  // Fetch candidate's flashcard progress
   const fetchProgress = useCallback(async () => {
     const targetId = user?.id;
     if (!targetId) return;
@@ -243,6 +232,15 @@ export default function FlashcardPage() {
     return corpus;
   }, []);
 
+  // Grouping rules live in a pure utility so the page stays readable.
+  const dynamicGroups = buildFlashcardGroups({
+    vocabStats,
+    masteryRecords,
+    cloudProgressByTopic,
+    isAdmin,
+    userName: user?.name,
+  });
+
   const getTopicMistakeCount = (topic) => {
     const localRecords = masteryRecords[topic] || {};
     const remoteProgress = cloudProgressByTopic[topic];
@@ -255,127 +253,18 @@ export default function FlashcardPage() {
     return localMistakes.length + new Set(remoteMistakes).size;
   };
 
-  // Compute dynamic groups
-  const dynamicGroups = [];
+  const filteredGroups = dynamicGroups.filter((group) => group.part === activePart);
+  const {
+    totalPages: totalGroupsPages,
+    page: currentGroupsPage,
+    items: paginatedGroups,
+  } = paginateFlashcardGroups(filteredGroups, groupsPage);
 
-  // 1. All Active word lists
-  const activeList = vocabStats?.activeTopics || [];
-  if (activeList.length > 0) {
-    activeList.forEach((act, idx) => {
-      const totalWords = act.count ?? 0;
-      const summary = getFlashcardMasterySummary(masteryRecords, act.title);
-      const legacyKnownCount = cloudProgressByTopic[act.title]?.knownWords?.length || 0;
-      const known = Math.max(summary.knew, legacyKnownCount);
-      const percent =
-        totalWords > 0 ? Math.min(100, Math.round((known / totalWords) * 100)) : 0;
-      const mistakesCount = getTopicMistakeCount(act.title);
+  const handlePartChange = (part) => {
+    setActivePart(part);
+    setGroupsPage(0);
+  };
 
-      dynamicGroups.push({
-        id: `active-${idx}-${act.title}`,
-        part: "All Active",
-        title: act.title,
-        description:
-          act.title === "Academic Word List: Sublist A"
-            ? "High-frequency academic stems, Latin morphemes & IELTS Band 8+ lexicon."
-            : `Active official curriculum corpus with ${totalWords} lexemes.`,
-        wordsCount: totalWords,
-        knownCount: known,
-        mistakesCount,
-        percent,
-        hasMistakes: mistakesCount > 0,
-      });
-    });
-  }
-
-  // 2. Listening Vocabs
-  const listeningList = vocabStats?.listeningTopics || [];
-  if (listeningList.length > 0) {
-    listeningList.forEach((lis, idx) => {
-      const knew = getFlashcardMasterySummary(masteryRecords, lis.title).knew;
-      const mistakesCount = getTopicMistakeCount(lis.title);
-      dynamicGroups.push({
-        id: `listening-${idx}-${lis.title}`,
-        part: "Listening Vocabs",
-        title: lis.title,
-        description: `IELTS listening module vocabulary (${lis.count} lexemes).`,
-        wordsCount: lis.count,
-        knownCount: knew,
-        mistakesCount,
-        percent: lis.count > 0 ? Math.min(100, Math.round((knew / lis.count) * 100)) : 0,
-        hasMistakes: mistakesCount > 0,
-      });
-    });
-  }
-
-  // 3. Uploaded Topics
-  const uploadedList = vocabStats?.uploadedTopics || [];
-  if (uploadedList.length > 0) {
-    uploadedList.forEach((up, idx) => {
-      const knew = getFlashcardMasterySummary(masteryRecords, up.title).knew;
-      const mistakesCount = getTopicMistakeCount(up.title);
-      dynamicGroups.push({
-        id: `uploaded-${idx}-${up.title}`,
-        part: "Uploaded",
-        title: up.title,
-        description: `Custom uploaded corpus category with ${up.count} terms.`,
-        wordsCount: up.count,
-        uploaderName: up.uploaderName || (isAdmin ? "Admin" : user?.name || "You"),
-        knownCount: knew,
-        mistakesCount,
-        percent: up.count > 0 ? Math.min(100, Math.round((knew / up.count) * 100)) : 0,
-        hasMistakes: mistakesCount > 0,
-      });
-    });
-  }
-
-  const mistakeGroups = new Map();
-  for (const mistake of getFlashcardMistakes(masteryRecords)) {
-    const current = mistakeGroups.get(mistake.topic) || [];
-    current.push(mistake);
-    mistakeGroups.set(mistake.topic, current);
-  }
-  for (const [topic, progress] of Object.entries(cloudProgressByTopic)) {
-    if (
-      (progress.unknownWords?.length || 0) + (progress.forgotWords?.length || 0) > 0 &&
-      !mistakeGroups.has(topic)
-    ) {
-      mistakeGroups.set(topic, []);
-    }
-  }
-  for (const [topic] of mistakeGroups) {
-    const mistakesCount = getTopicMistakeCount(topic);
-    if (mistakesCount === 0) continue;
-    dynamicGroups.push({
-      id: `mistakes-${topic}`,
-      part: "Mistakes",
-      title: topic,
-      description: `${mistakesCount} words need another review.`,
-      wordsCount: mistakesCount,
-      knownCount: getFlashcardMasterySummary(masteryRecords, topic).knew,
-      mistakesCount,
-      percent: 0,
-      hasMistakes: mistakesCount > 0,
-    });
-  }
-
-  // Filter by tab + paginate (6 per page)
-  const filteredGroups = dynamicGroups.filter((g) => g.part === activePart);
-  const totalGroupsPages = Math.max(
-    1,
-    Math.ceil(filteredGroups.length / GROUPS_PER_PAGE),
-  );
-  // Clamp so the page never points past the end (e.g. when mistakes get cleared)
-  const currentGroupsPage = Math.min(groupsPage, totalGroupsPages - 1);
-  const paginatedGroups = filteredGroups.slice(
-    currentGroupsPage * GROUPS_PER_PAGE,
-    (currentGroupsPage + 1) * GROUPS_PER_PAGE,
-  );
-
-  const goToPrevGroupsPage = () => setGroupsPage(Math.max(0, currentGroupsPage - 1));
-  const goToNextGroupsPage = () =>
-    setGroupsPage(Math.min(totalGroupsPages - 1, currentGroupsPage + 1));
-
-  // Load words when starting drill
   const loadWordsForDrill = useCallback(
     async (group, onlyMistakes = false) => {
       const requestId = ++loadWordsRequestId.current;
@@ -455,7 +344,6 @@ export default function FlashcardPage() {
     loadWordsForDrillRef.current = loadWordsForDrill;
   }, [loadWordsForDrill]);
 
-  // Start Flashcard Practice
   const handleStartDrill = useCallback((group, isMistakes = false) => {
     setSelectedGroup(group);
     setMistakesOnly(isMistakes);
@@ -478,9 +366,7 @@ export default function FlashcardPage() {
     loadWordsForDrillRef.current(drillRequest.group, drillRequest.isMistakes);
   }, [drillRequest]);
 
-  // Return to Corpus Sets
   const handleReturnToSets = () => {
-    // Cancel any pending auto-advance from a just-rated card
     clearTimeout(rateTimeoutRef.current);
 
     if (sessionStartTimeRef.current && user?.id) {
@@ -503,6 +389,9 @@ export default function FlashcardPage() {
 
   const activeWords = mistakesOnly ? mistakesList : words;
   const currentWord = activeWords[currentIndex] || null;
+  const languageLabel =
+    MEANING_LANGUAGES.find((item) => item.code === selectedLanguage)?.label ||
+    "English";
 
   const handleGenerateContent = async (generationType) => {
     if (!currentWord?.id || generationInProgress) return;
@@ -577,6 +466,7 @@ export default function FlashcardPage() {
           );
         }
 
+        // Knowing a card also clears any older spelling mistake for that word.
         if (status === "knew") {
           try {
             await apiClient.post("/spelling/progress", {
@@ -603,7 +493,6 @@ export default function FlashcardPage() {
     [masteryRecords, selectedGroup, user],
   );
 
-  // Christopher Neural Audio Speech
   const speakCurrentWord = useCallback(
     (overrideWord) => {
       const text = overrideWord || currentWord?.word;
@@ -626,7 +515,6 @@ export default function FlashcardPage() {
     };
   }, []);
 
-  // Record Flashcard Rating (Knew, Didn't Know, Forgot)
   const handleRateCard = useCallback(
     async (status) => {
       if (!currentWord || hasAnsweredCurrent) return;
@@ -647,7 +535,7 @@ export default function FlashcardPage() {
         setSessionUnknown((prev) => [...prev, wordText]);
       }
 
-      // Auto-advance after 450ms smooth delay (cancelled if the user leaves the drill)
+      // Auto-advance after a short beat so the rating registers visually.
       clearTimeout(rateTimeoutRef.current);
       rateTimeoutRef.current = setTimeout(() => {
         if (!isMountedRef.current) return;
@@ -657,36 +545,25 @@ export default function FlashcardPage() {
           setIsFlipped(false);
           setHasAnsweredCurrent(false);
         } else {
-          // Last card reached -> Finish Screen
           setViewMode("finished");
         }
       }, 450);
     },
-    [
-      currentWord,
-      hasAnsweredCurrent,
-      persistFlashcardAttempt,
-      currentIndex,
-      activeWords.length,
-    ],
+    [currentWord, hasAnsweredCurrent, persistFlashcardAttempt, currentIndex, activeWords.length],
   );
 
-  // Keyboard Navigation & anti-holding optimization
   useEffect(() => {
     if (viewMode !== "drill") return;
 
     const handleKeyDown = (e) => {
-      // Stop browser auto-repeat when a key is held down
       if (e.repeat) return;
 
-      // Flip card: Space or Tab
       if (e.key === "Tab" || e.code === "Space") {
         e.preventDefault();
         setIsFlipped((prev) => !prev);
         return;
       }
 
-      // Ratings when flipped: 1 = Didn't Know, 2 = Forgot, 3 = I Knew It
       if (isFlipped && !hasAnsweredCurrent) {
         if (e.key === "1") {
           e.preventDefault();
@@ -705,13 +582,10 @@ export default function FlashcardPage() {
         }
       }
 
-      // Navigation: prevent skipping ahead without answering
       if (e.key === "ArrowRight") {
         e.preventDefault();
         if (!hasAnsweredCurrent) {
-          if (!isFlipped) {
-            setIsFlipped(true);
-          }
+          if (!isFlipped) setIsFlipped(true);
           return;
         }
         if (currentIndex < activeWords.length - 1) {
@@ -733,18 +607,8 @@ export default function FlashcardPage() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [
-    viewMode,
-    isFlipped,
-    hasAnsweredCurrent,
-    currentIndex,
-    activeWords.length,
-    handleRateCard,
-  ]);
+  }, [viewMode, isFlipped, hasAnsweredCurrent, currentIndex, activeWords.length, handleRateCard]);
 
-  // ==========================================================
-  // RANDOM QUIZ ENGINE
-  // ==========================================================
   const startRandomQuiz = (group) => {
     setSelectedGroup(group || null);
     setQuizTopic(group?.title || null);
@@ -769,11 +633,9 @@ export default function FlashcardPage() {
         return;
       }
 
-      // Shuffle corpus & pick quantity
       const shuffled = secureShuffle(quizCorpus);
       const selected = shuffled.slice(0, Math.min(quizQuantity, shuffled.length));
 
-      // Generate multiple-choice options (no duplicates, never repeating the correct answer)
       const generated = selected.map((item) => {
         const correctAnswer = getVocabularyMeaning(item, selectedLanguage);
         const distractors = [
@@ -798,7 +660,6 @@ export default function FlashcardPage() {
       setQuizScore(0);
       setQuizUserAnswers([]);
       setQuizFinished(false);
-
       setViewMode("quiz");
       startQuizTimer(quizTimerMinutes);
     } catch (error) {
@@ -811,15 +672,15 @@ export default function FlashcardPage() {
 
   const handleQuizAnswer = async (chosen) => {
     if (isSavingQuizAnswer || quizFinished) return;
-    const q = quizQuestions[quizIndex];
-    if (!q) return;
+    const question = quizQuestions[quizIndex];
+    if (!question) return;
     setIsSavingQuizAnswer(true);
-    const isCorrect = chosen === q.correctAnswer;
+    const isCorrect = chosen === question.correctAnswer;
     const saved = await persistFlashcardAttempt(
-      q.vocabulary,
+      question.vocabulary,
       isCorrect ? "knew" : "unknown",
       quizIndex,
-      q.vocabulary.topic || quizTopic,
+      question.vocabulary.topic || quizTopic,
     );
     if (!saved) {
       setIsSavingQuizAnswer(false);
@@ -829,7 +690,12 @@ export default function FlashcardPage() {
 
     setQuizUserAnswers((prev) => [
       ...prev,
-      { question: q.word, chosen, correct: q.correctAnswer, isCorrect },
+      {
+        question: question.word,
+        chosen,
+        correct: question.correctAnswer,
+        isCorrect,
+      },
     ]);
 
     if (quizIndex < quizQuestions.length - 1) {
@@ -841,783 +707,143 @@ export default function FlashcardPage() {
     setIsSavingQuizAnswer(false);
   };
 
-  // Format Timer mm:ss
-  const formatTimer = (seconds) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs < 10 ? "0" : ""}${secs}`;
+  const handleNextCard = () => {
+    if (currentIndex < activeWords.length - 1) {
+      setSlideDirection("next");
+      setCurrentIndex((prev) => prev + 1);
+      setIsFlipped(false);
+      setHasAnsweredCurrent(false);
+    } else {
+      setViewMode("finished");
+    }
   };
+
+  const handlePrevCard = () => {
+    if (currentIndex > 0) {
+      setSlideDirection("prev");
+      setCurrentIndex((prev) => prev - 1);
+      setIsFlipped(false);
+      setHasAnsweredCurrent(false);
+    }
+  };
+
+  const handlePracticeSessionMistakes = () => {
+    const mistakeWords = words.filter(
+      (word) =>
+        sessionUnknown.includes(word.word) || sessionForgot.includes(word.word),
+    );
+    setMistakesList(mistakeWords);
+    setMistakesOnly(true);
+    setCurrentIndex(0);
+    setIsFlipped(false);
+    setHasAnsweredCurrent(false);
+    setSessionKnew([]);
+    setSessionUnknown([]);
+    setSessionForgot([]);
+    setViewMode("drill");
+  };
+
+  const handleStartOver = () => {
+    setMistakesOnly(false);
+    setCurrentIndex(0);
+    setIsFlipped(false);
+    setHasAnsweredCurrent(false);
+    setSessionKnew([]);
+    setSessionUnknown([]);
+    setSessionForgot([]);
+    setViewMode("drill");
+  };
+
+  const handleExitQuiz = () => {
+    stopQuizTimer();
+    setViewMode("sets");
+  };
+
+  const selectedTopicMistakes = selectedGroup
+    ? getTopicMistakeCount(selectedGroup.title)
+    : 0;
 
   return (
     <div className="w-full flex flex-col space-y-7 animate-slide-up">
-      {/* 1. Header Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 pb-4 border-b border-plum/15">
-        <div>
-          <div className="flex flex-wrap items-center gap-2 sm:space-x-3">
-            <h1 className="text-2xl sm:text-3xl font-black text-body-dark tracking-tight">
-              Vocabulary Flashcards
-            </h1>
-            <span className="imlaa-badge text-xs sm:text-base py-0.5 sm:py-1 px-2.5 sm:px-3">
-              {vocabStats?.totalCount ?? 0} Lexemes
-            </span>
-          </div>
-          <p className="text-xs sm:text-base text-muted-label mt-1">
-            Active recall, confidence self-assessment & targeted mistake drill.
-          </p>
-        </div>
+      <FlashcardHeader
+        totalCount={vocabStats?.totalCount}
+        loading={loading}
+        onStartQuiz={startRandomQuiz}
+      />
 
-        {/* Global Action Buttons */}
-        <div className="flex items-center space-x-3 self-start sm:self-auto">
-          <button
-            type="button"
-            onClick={() => startRandomQuiz()}
-            disabled={loading}
-            className="imlaa-btn-secondary text-xs sm:text-sm py-2 px-3 sm:px-4 flex items-center space-x-2 min-h-11"
-          >
-            <HiSparkles className="w-4 h-4 text-plum shrink-0" />
-            <span>Random Quiz</span>
-          </button>
-        </div>
-      </div>
-
-      {/* ==================================================== */}
-      {/* 2. CORPUS SETS VIEW (Home Selection)                 */}
-      {/* ==================================================== */}
       {viewMode === "sets" && (
-        <div className="flex flex-col space-y-6">
-          {/* Part Filter Tabs */}
-          <div className="flex flex-wrap items-center gap-2">
-            {PARTS.map((part) => (
-              <button
-                key={part}
-                type="button"
-                onClick={() => {
-                  setActivePart(part);
-                  setGroupsPage(0);
-                }}
-                className={`imlaa-tab-btn text-base px-5 py-2.5 ${
-                  activePart === part ? "active" : ""
-                }`}
-              >
-                {part}
-              </button>
-            ))}
-          </div>
-
-          {/* Vocabulary Groups Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {paginatedGroups.length === 0 ? (
-              <p className="imlaa-card md:col-span-2 lg:col-span-3 p-6 text-center text-muted-label">
-                {activePart === "Mistakes"
-                  ? "No words need review right now. Incorrect and forgotten answers will appear here."
-                  : "No vocabulary sets are available in this tab yet."}
-              </p>
-            ) : (
-              paginatedGroups.map((group) => (
-                <div
-                  key={group.id}
-                  className="imlaa-card p-6 flex flex-col justify-between hover:shadow-md transition-all duration-200 border border-plum/20"
-                >
-                  <div>
-                    <div className="flex items-center justify-between text-base font-semibold mb-2">
-                      <span className="text-muted-label font-semibold">
-                        {group.wordsCount} Terms
-                      </span>
-                      {group.hasMistakes && (
-                        <span className="text-rose-600 bg-rose-50 px-2 py-0.5 rounded text-xs font-bold">
-                          {group.mistakesCount} Needs Review
-                        </span>
-                      )}
-                    </div>
-
-                    <h3 className="text-xl font-bold text-body-dark leading-snug mb-1">
-                      {group.title}
-                    </h3>
-
-                    {/* Corpus Uploader or Curriculum Pill */}
-                    <div className="mb-3">
-                      {group.part === "Uploaded" ? (
-                        <span className="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-md bg-plum/10 text-plum text-xs font-semibold border border-plum/20">
-                          <HiUser className="w-3.5 h-3.5 text-plum" />
-                          <span>
-                            Uploaded by {group.uploaderName || user?.name || "You"}
-                          </span>
-                        </span>
-                      ) : group.part === "Mistakes" ? (
-                        <span className="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-md bg-rose-50 text-rose-700 text-xs font-semibold border border-rose-200">
-                          <HiXCircle className="w-3.5 h-3.5" />
-                          <span>Needs Review</span>
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-md bg-stone-100 text-stone-700 text-xs font-semibold border border-stone-200">
-                          <HiAcademicCap className="w-3.5 h-3.5 text-plum" />
-                          <span>Curriculum Corpus</span>
-                        </span>
-                      )}
-                    </div>
-
-                    <p className="text-base text-muted-label leading-relaxed mb-4">
-                      {group.description}
-                    </p>
-                  </div>
-
-                  <div>
-                    {/* Progress Indicator */}
-                    <div className="mb-4">
-                      <div className="flex items-center justify-between text-xs font-semibold text-muted-label mb-1.5">
-                        <span>Corpus Mastery</span>
-                        <span>{group.percent}%</span>
-                      </div>
-                      <div className="w-full bg-plum/10 rounded-full h-2 overflow-hidden">
-                        <div
-                          className="h-full rounded-full bg-plum transition-all duration-500"
-                          style={{ width: `${group.percent}%` }}
-                        />
-                      </div>
-                      <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2 text-[11px] font-medium text-muted-label">
-                        <span>
-                          Know:{" "}
-                          {getFlashcardMasterySummary(masteryRecords, group.title).knew}
-                        </span>
-                        <span>
-                          Do Not Know:{" "}
-                          {
-                            getFlashcardMasterySummary(masteryRecords, group.title)
-                              .unknown
-                          }
-                        </span>
-                        <span>
-                          Forgot:{" "}
-                          {getFlashcardMasterySummary(masteryRecords, group.title).forgot}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Actions */}
-                    <div className="flex items-center justify-between pt-3 border-t border-plum/10 gap-2">
-                      {group.hasMistakes ? (
-                        <button
-                          type="button"
-                          onClick={() => handleStartDrill(group, true)}
-                          className="imlaa-btn-secondary text-xs py-2 px-3 text-rose-700 font-bold border-rose-300"
-                        >
-                          Mistakes ({group.mistakesCount})
-                        </button>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => startRandomQuiz(group)}
-                          className="imlaa-btn-secondary text-xs py-2 px-3 text-plum"
-                        >
-                          Quiz
-                        </button>
-                      )}
-
-                      {group.part !== "Mistakes" && (
-                        <button
-                          type="button"
-                          disabled={!group.wordsCount || group.wordsCount === 0}
-                          onClick={() => handleStartDrill(group, false)}
-                          className="imlaa-btn-primary py-2 px-4 text-sm font-semibold"
-                        >
-                          Study Flashcards
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-
-          {/* Pagination Controls for Corpus Groups */}
-          {totalGroupsPages > 1 && (
-            <div className="flex items-center justify-center gap-3 mt-6">
-              <button
-                type="button"
-                onClick={goToPrevGroupsPage}
-                disabled={currentGroupsPage === 0}
-                className="imlaa-btn-secondary min-h-11 min-w-11 p-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                aria-label="Previous page"
-              >
-                <HiChevronLeft className="w-5 h-5" />
-              </button>
-              <span className="text-sm font-semibold text-body-dark px-4">
-                Page {currentGroupsPage + 1} of {totalGroupsPages}
-              </span>
-              <button
-                type="button"
-                onClick={goToNextGroupsPage}
-                disabled={currentGroupsPage === totalGroupsPages - 1}
-                className="imlaa-btn-secondary min-h-11 min-w-11 p-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                aria-label="Next page"
-              >
-                <HiChevronRight className="w-5 h-5" />
-              </button>
-            </div>
-          )}
-        </div>
+        <FlashcardSetsView
+          parts={PARTS}
+          activePart={activePart}
+          onPartChange={handlePartChange}
+          groups={paginatedGroups}
+          totalPages={totalGroupsPages}
+          currentPage={currentGroupsPage}
+          onPrevPage={() => setGroupsPage(Math.max(0, currentGroupsPage - 1))}
+          onNextPage={() =>
+            setGroupsPage(Math.min(totalGroupsPages - 1, currentGroupsPage + 1))
+          }
+          masteryRecords={masteryRecords}
+          userName={user?.name}
+          isAdmin={isAdmin}
+          onStartDrill={handleStartDrill}
+          onStartQuiz={startRandomQuiz}
+        />
       )}
 
-      {/* ==================================================== */}
-      {/* 3. ACTIVE FLASHCARD DRILL VIEW                       */}
-      {/* ==================================================== */}
       {viewMode === "drill" && (
-        <div className="w-full max-w-2xl mx-auto flex flex-col items-center space-y-6">
-          {/* Header Bar inside drill */}
-          <div className="w-full flex items-center justify-between text-base px-1">
-            <button
-              type="button"
-              onClick={handleReturnToSets}
-              className="inline-flex items-center space-x-2 text-plum hover:text-plum-hover font-semibold cursor-pointer"
-            >
-              <HiArrowLeft className="w-5 h-5" />
-              <span>Back to Sets</span>
-            </button>
-
-            {selectedGroup && (
-              <span className="imlaa-badge text-base">{selectedGroup.title}</span>
-            )}
-          </div>
-
-          {loading ? (
-            <div className="imlaa-card w-full p-16 text-center animate-pulse">
-              <div className="text-xl text-plum font-semibold">Loading flashcards...</div>
-            </div>
-          ) : !currentWord ? (
-            <div className="imlaa-card w-full p-12 text-center space-y-4">
-              <div className="text-2xl font-bold text-body-dark">
-                No words in this drill
-              </div>
-              <button
-                type="button"
-                onClick={handleReturnToSets}
-                className="imlaa-btn-primary text-base"
-              >
-                Choose Another Topic
-              </button>
-            </div>
-          ) : (
-            <div className="w-full flex flex-col space-y-6">
-              {/* Step Counter */}
-              <div className="w-full flex items-center justify-between px-1">
-                <span className="text-base font-bold text-body-dark bg-white px-3.5 py-1.5 rounded-xl border border-plum/20 shadow-xs">
-                  Card <span className="text-plum">{currentIndex + 1}</span> of{" "}
-                  {activeWords.length}
-                </span>
-
-                {/* Language preference is managed from the Profile page. */}
-                <div className="flex items-center space-x-1.5 text-xs text-muted-label">
-                  <HiLanguage className="w-4 h-4 text-plum" />
-                  <span className="font-semibold text-body-dark">
-                    {LANGUAGE_TRANSLATIONS[selectedLanguage] || "English"}
-                  </span>
-                </div>
-              </div>
-
-              {/* 3D Animated Flip Card */}
-              <div
-                key={currentIndex}
-                className={`imlaa-flip-card-container ${
-                  slideDirection === "next" ? "animate-card-next" : "animate-card-prev"
-                }`}
-              >
-                <div className={`imlaa-flip-card-inner ${isFlipped ? "is-flipped" : ""}`}>
-                  {/* FRONT FACE: Word prompt */}
-                  <div
-                    onClick={() => setIsFlipped(true)}
-                    className="imlaa-flip-face imlaa-card p-10 text-center bg-white border border-plum/20 shadow-md flex flex-col justify-between cursor-pointer min-h-95"
-                  >
-                    <div className="flex items-center justify-between text-xs font-bold text-muted-label uppercase tracking-wider">
-                      <span>Front • Word Recall</span>
-                      <span className="text-plum font-semibold">
-                        Press Tab or Space to Flip
-                      </span>
-                    </div>
-
-                    <div className="flex flex-col items-center space-y-4 my-auto">
-                      <h2 className="text-4xl sm:text-5xl font-black text-body-dark tracking-tight">
-                        {currentWord.word}
-                      </h2>
-                      <span className="text-lg text-plum font-semibold italic">
-                        {currentWord.pos || "Lexeme"}
-                      </span>
-
-                      {/* Audio Button & Equalizer */}
-                      <div className="mt-3 flex items-center space-x-2">
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            speakCurrentWord();
-                          }}
-                          className="w-12 h-12 rounded-xl bg-plum/10 hover:bg-plum hover:text-white text-plum flex items-center justify-center transition cursor-pointer min-h-11 min-w-11 active:scale-95"
-                          title="Listen to pronunciation"
-                        >
-                          <HiSpeakerWave
-                            className={`w-6 h-6 ${isSpeaking ? "animate-pulse" : ""}`}
-                          />
-                        </button>
-                        <AudioEqualizer isPlaying={isSpeaking} />
-                      </div>
-                    </div>
-
-                    <div className="pt-4 border-t border-plum/10">
-                      <span className="text-sm font-semibold text-plum hover:underline">
-                        Click card or press Tab to reveal meaning & details →
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* BACK FACE: Meaning, Synonyms & Assessment */}
-                  <div className="imlaa-flip-face imlaa-flip-face-back imlaa-card p-6 sm:p-8 text-left bg-white border border-plum/20 shadow-md flex flex-col justify-between min-h-95">
-                    <div className="flex flex-col space-y-4 w-full">
-                      {/* Top Header */}
-                      <div className="flex items-center justify-between border-b border-plum/15 pb-3">
-                        <div>
-                          <h3 className="text-3xl font-black text-body-dark">
-                            {currentWord.word}
-                          </h3>
-                          <span className="text-sm text-plum font-semibold italic">
-                            {currentWord.pos}
-                          </span>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <AudioEqualizer isPlaying={isSpeaking} />
-                          <button
-                            type="button"
-                            onClick={() => speakCurrentWord()}
-                            className="w-10 h-10 rounded-xl bg-plum/10 hover:bg-plum hover:text-white text-plum flex items-center justify-center transition cursor-pointer min-h-11 min-w-11 active:scale-95"
-                          >
-                            <HiSpeakerWave
-                              className={`w-5 h-5 ${isSpeaking ? "animate-pulse" : ""}`}
-                            />
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Meaning */}
-                      <div>
-                        <div className="text-xs uppercase tracking-wider text-muted-label font-bold mb-1">
-                          Meaning ({LANGUAGE_TRANSLATIONS[selectedLanguage]})
-                        </div>
-                        <div className="text-xl font-bold text-body-dark">
-                          {getVocabularyMeaning(currentWord, selectedLanguage) ||
-                            `No ${LANGUAGE_TRANSLATIONS[selectedLanguage]} meaning saved yet.`}
-                        </div>
-                      </div>
-
-                      {selectedLanguage !== "en" && (
-                        <div>
-                          <div className="mb-1 text-xs font-bold uppercase tracking-wider text-muted-label">
-                            Definition (English)
-                          </div>
-                          <div className="text-sm leading-relaxed text-body-dark">
-                            {currentWord.definition ||
-                              "No English definition generated yet."}
-                          </div>
-                        </div>
-                      )}
-
-                      {!["en", "bn"].includes(selectedLanguage) &&
-                        !getVocabularyMeaning(currentWord, selectedLanguage) && (
-                          <button
-                            type="button"
-                            onClick={() => handleGenerateContent("meaning")}
-                            disabled={generationInProgress?.id === currentWord.id}
-                            className="imlaa-btn-secondary min-h-11 w-full px-4 text-sm font-semibold text-plum disabled:cursor-wait disabled:opacity-60"
-                          >
-                            {generationInProgress?.id === currentWord.id &&
-                            generationInProgress.type === "meaning"
-                              ? "Generating..."
-                              : "Generate one-word meaning"}
-                          </button>
-                        )}
-
-                      {!currentWord.definition && (
-                        <button
-                          type="button"
-                          onClick={() => handleGenerateContent("definition")}
-                          disabled={generationInProgress?.id === currentWord.id}
-                          className="imlaa-btn-secondary min-h-11 w-full px-4 text-sm font-semibold text-plum disabled:cursor-wait disabled:opacity-60"
-                        >
-                          {generationInProgress?.id === currentWord.id &&
-                          generationInProgress.type === "definition"
-                            ? "Generating..."
-                            : "Generate definition"}
-                        </button>
-                      )}
-
-                      {/* Synonyms */}
-                      {currentWord.synonyms && currentWord.synonyms.length > 0 && (
-                        <div>
-                          <div className="text-xs uppercase tracking-wider text-muted-label font-bold mb-1">
-                            Synonyms
-                          </div>
-                          <div className="flex flex-wrap gap-1.5">
-                            {currentWord.synonyms.map((syn, idx) => (
-                              <span
-                                key={idx}
-                                className="imlaa-badge text-xs py-0.5 px-2 font-medium"
-                              >
-                                {syn}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Example Sentence */}
-                      {currentWord.exampleUsage && (
-                        <div className="p-3 rounded-xl bg-plum/5 border border-plum/20">
-                          <p className="text-sm text-body-dark italic">
-                            "{currentWord.exampleUsage}"
-                          </p>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* POST-FLIP ASSESSMENT BUTTONS */}
-                    <div className="pt-4 border-t border-plum/15 mt-4">
-                      <div className="text-xs font-bold text-muted-label uppercase tracking-wider text-center mb-2.5">
-                        How well did you know this word?
-                      </div>
-
-                      <div className="grid grid-cols-3 gap-2.5">
-                        {/* 1. Didn't Know */}
-                        <button
-                          type="button"
-                          disabled={hasAnsweredCurrent}
-                          onClick={() => handleRateCard("unknown")}
-                          className="p-3 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-sm flex flex-col items-center space-y-1 transition active:scale-95 cursor-pointer"
-                        >
-                          <HiXCircle className="w-5 h-5" />
-                          <span>Didn't Know</span>
-                          <span className="text-[10px] text-rose-500 font-normal">
-                            [1]
-                          </span>
-                        </button>
-
-                        {/* 2. Forgot */}
-                        <button
-                          type="button"
-                          disabled={hasAnsweredCurrent}
-                          onClick={() => handleRateCard("forgot")}
-                          className="p-3 rounded-xl border border-amber-200 bg-amber-50 hover:bg-amber-100 text-amber-700 font-bold text-sm flex flex-col items-center space-y-1 transition active:scale-95 cursor-pointer"
-                        >
-                          <HiClock className="w-5 h-5" />
-                          <span>Forgot</span>
-                          <span className="text-[10px] text-amber-500 font-normal">
-                            [2]
-                          </span>
-                        </button>
-
-                        {/* 3. I Knew It */}
-                        <button
-                          type="button"
-                          disabled={hasAnsweredCurrent}
-                          onClick={() => handleRateCard("knew")}
-                          className="p-3 rounded-xl border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-sm flex flex-col items-center space-y-1 transition active:scale-95 cursor-pointer"
-                        >
-                          <HiCheckCircle className="w-5 h-5" />
-                          <span>I Knew It</span>
-                          <span className="text-[10px] text-emerald-500 font-normal">
-                            [3]
-                          </span>
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Bottom Nav Controls (Prev / Next) */}
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 w-full">
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (currentIndex > 0) {
-                      setSlideDirection("prev");
-                      setCurrentIndex((prev) => prev - 1);
-                      setIsFlipped(false);
-                      setHasAnsweredCurrent(false);
-                    }
-                  }}
-                  disabled={currentIndex === 0}
-                  className="imlaa-btn-secondary py-2.5 sm:py-3 px-4 sm:px-5 text-sm sm:text-base flex items-center justify-center space-x-2 w-full sm:w-auto min-h-11"
-                >
-                  <HiChevronLeft className="w-5 h-5 shrink-0" />
-                  <span>Previous</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setIsFlipped((prev) => !prev)}
-                  className="imlaa-btn-secondary py-2.5 sm:py-3 px-4 text-xs sm:text-sm w-full sm:w-auto min-h-11"
-                >
-                  {isFlipped ? "Flip to Word" : "Flip to Meaning"}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (currentIndex < activeWords.length - 1) {
-                      setSlideDirection("next");
-                      setCurrentIndex((prev) => prev + 1);
-                      setIsFlipped(false);
-                      setHasAnsweredCurrent(false);
-                    } else {
-                      setViewMode("finished");
-                    }
-                  }}
-                  disabled={!hasAnsweredCurrent}
-                  className="imlaa-btn-primary py-2.5 sm:py-3 px-4 sm:px-5 text-sm sm:text-base flex items-center justify-center space-x-2 w-full sm:w-auto min-h-11"
-                >
-                  <span>
-                    {currentIndex === activeWords.length - 1
-                      ? "Finish Drill"
-                      : "Next Word"}
-                  </span>
-                  <HiChevronRight className="w-5 h-5 shrink-0" />
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
+        <FlashcardDrillView
+          currentWord={currentWord}
+          currentIndex={currentIndex}
+          totalWords={activeWords.length}
+          isFlipped={isFlipped}
+          slideDirection={slideDirection}
+          isSpeaking={isSpeaking}
+          loading={loading}
+          selectedGroup={selectedGroup}
+          languageCode={selectedLanguage}
+          languageLabel={languageLabel}
+          generationInProgress={generationInProgress}
+          hasAnsweredCurrent={hasAnsweredCurrent}
+          onBack={handleReturnToSets}
+          onFlip={setIsFlipped}
+          onSpeak={speakCurrentWord}
+          onRate={handleRateCard}
+          onGenerate={handleGenerateContent}
+          onPrev={handlePrevCard}
+          onNext={handleNextCard}
+        />
       )}
 
-      {/* ==================================================== */}
-      {/* 4. FINISH SUMMARY SCREEN                             */}
-      {/* ==================================================== */}
       {viewMode === "finished" && (
-        <div className="w-full max-w-xl mx-auto imlaa-card p-8 sm:p-10 text-center space-y-7 animate-slide-up border border-plum/20 shadow-lg bg-white">
-          <div className="w-16 h-16 rounded-full bg-plum/10 text-plum mx-auto flex items-center justify-center">
-            <HiSparkles className="w-8 h-8" />
-          </div>
-
-          <div className="space-y-2">
-            <h2 className="text-3xl font-black text-body-dark">
-              Flashcard Session Complete!
-            </h2>
-            <p className="text-base text-muted-label">
-              Here is your active recall breakdown for {selectedGroup?.title}.
-            </p>
-          </div>
-
-          {/* Stats Numbers Grid (Knew, Unknown, Forgot) */}
-          <div className="grid grid-cols-3 gap-4 pt-2">
-            {/* Knew */}
-            <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200">
-              <div className="text-3xl font-black text-emerald-700">
-                {sessionKnew.length}
-              </div>
-              <div className="text-xs font-bold uppercase tracking-wider text-emerald-800 mt-1">
-                Knew It
-              </div>
-            </div>
-
-            {/* Unknown */}
-            <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200">
-              <div className="text-3xl font-black text-rose-700">
-                {sessionUnknown.length}
-              </div>
-              <div className="text-xs font-bold uppercase tracking-wider text-rose-800 mt-1">
-                Didn't Know
-              </div>
-            </div>
-
-            {/* Forgot */}
-            <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200">
-              <div className="text-3xl font-black text-amber-700">
-                {sessionForgot.length}
-              </div>
-              <div className="text-xs font-bold uppercase tracking-wider text-amber-800 mt-1">
-                Forgot
-              </div>
-            </div>
-          </div>
-
-          {/* Action Options (Practice Mistakes & Start Over) */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4 border-t border-plum/15">
-            {sessionUnknown.length + sessionForgot.length > 0 && (
-              <button
-                type="button"
-                onClick={() => {
-                  const mistakeWords = words.filter(
-                    (w) =>
-                      sessionUnknown.includes(w.word) || sessionForgot.includes(w.word),
-                  );
-                  setMistakesList(mistakeWords);
-                  setMistakesOnly(true);
-                  setCurrentIndex(0);
-                  setIsFlipped(false);
-                  setHasAnsweredCurrent(false);
-                  setSessionKnew([]);
-                  setSessionUnknown([]);
-                  setSessionForgot([]);
-                  setViewMode("drill");
-                }}
-                className="imlaa-btn-primary w-full sm:w-auto py-3 px-6 text-base font-bold bg-rose-600 hover:bg-rose-700 text-white"
-              >
-                Practice Mistakes ({sessionUnknown.length + sessionForgot.length})
-              </button>
-            )}
-
-            <button
-              type="button"
-              onClick={() => {
-                setMistakesOnly(false);
-                setCurrentIndex(0);
-                setIsFlipped(false);
-                setHasAnsweredCurrent(false);
-                setSessionKnew([]);
-                setSessionUnknown([]);
-                setSessionForgot([]);
-                setViewMode("drill");
-              }}
-              className="imlaa-btn-secondary w-full sm:w-auto py-3 px-6 text-base font-semibold"
-            >
-              Start Over
-            </button>
-
-            <button
-              type="button"
-              onClick={handleReturnToSets}
-              className="imlaa-btn-secondary w-full sm:w-auto py-3 px-6 text-base font-semibold"
-            >
-              Corpus Sets
-            </button>
-          </div>
-        </div>
+        <FlashcardSessionSummary
+          selectedGroup={selectedGroup}
+          sessionKnew={sessionKnew}
+          sessionUnknown={sessionUnknown}
+          sessionForgot={sessionForgot}
+          onPracticeMistakes={handlePracticeSessionMistakes}
+          onStartOver={handleStartOver}
+          onReturnToSets={handleReturnToSets}
+        />
       )}
 
-      {/* ==================================================== */}
-      {/* 5. RANDOM QUIZ VIEW                                  */}
-      {/* ==================================================== */}
       {viewMode === "quiz" && (
-        <div className="w-full max-w-2xl mx-auto flex flex-col space-y-6">
-          <div className="flex items-center justify-between px-1">
-            <button
-              type="button"
-              onClick={() => {
-                stopQuizTimer();
-                setViewMode("sets");
-              }}
-              className="inline-flex items-center space-x-2 text-plum hover:text-plum-hover font-semibold cursor-pointer"
-            >
-              <HiArrowLeft className="w-5 h-5" />
-              <span>Exit Quiz</span>
-            </button>
-
-            {quizTimerMinutes > 0 && (
-              <div className="flex items-center space-x-2 bg-plum/10 text-plum font-mono font-bold px-3 py-1 rounded-xl">
-                <HiClock className="w-5 h-5" />
-                <span>{formatTimer(quizTimeRemaining)}</span>
-              </div>
-            )}
-          </div>
-
-          {!quizFinished && quizQuestions.length > 0 ? (
-            <div className="imlaa-card p-8 bg-white border border-plum/20 shadow-md space-y-6">
-              <div className="flex items-center justify-between text-sm text-muted-label font-semibold">
-                <span>
-                  Question {quizIndex + 1} of {quizQuestions.length}
-                </span>
-                <span>Score: {quizScore}</span>
-              </div>
-
-              <div className="text-center py-4 space-y-2 border-b border-plum/10">
-                <h3 className="text-4xl font-black text-body-dark">
-                  {quizQuestions[quizIndex].word}
-                </h3>
-                <span className="text-base text-plum font-semibold italic">
-                  {quizQuestions[quizIndex].pos}
-                </span>
-              </div>
-
-              {/* Answer choices */}
-              <div className="grid grid-cols-1 gap-3">
-                {quizQuestions[quizIndex].options.map((opt, idx) => (
-                  <button
-                    key={idx}
-                    type="button"
-                    onClick={() => handleQuizAnswer(opt)}
-                    disabled={isSavingQuizAnswer}
-                    className="p-4 rounded-xl border border-plum/20 hover:border-plum hover:bg-plum/5 text-left font-semibold text-body-dark transition cursor-pointer"
-                  >
-                    {opt}
-                  </button>
-                ))}
-              </div>
-            </div>
-          ) : (
-            /* Quiz Results */
-            <div className="imlaa-card p-8 bg-white border border-plum/20 shadow-md text-center space-y-6">
-              <h2 className="text-3xl font-black text-body-dark">Quiz Completed!</h2>
-              <div className="text-5xl font-black text-plum">
-                {quizScore} / {quizQuestions.length}
-              </div>
-              <p className="text-base text-muted-label">
-                Accuracy: {Math.round((quizScore / (quizQuestions.length || 1)) * 100)}%
-              </p>
-
-              {quizUserAnswers.length > 0 && (
-                <div className="max-h-48 overflow-y-auto text-left text-xs space-y-1.5 p-3 rounded-xl bg-plum/5 border border-plum/10">
-                  <div className="font-bold text-plum mb-1 uppercase tracking-wider text-[11px]">
-                    Answer Summary:
-                  </div>
-                  {quizUserAnswers.map((ans, idx) => (
-                    <div
-                      key={idx}
-                      className="flex items-center justify-between py-1 border-b border-plum/10 last:border-0"
-                    >
-                      <span className="font-bold text-body-dark">
-                        {ans.question}:{" "}
-                        <span className="font-normal text-muted-label">{ans.chosen}</span>
-                      </span>
-                      <span
-                        className={`font-bold ${
-                          ans.isCorrect ? "text-emerald-700" : "text-rose-700"
-                        }`}
-                      >
-                        {ans.isCorrect ? "✓ Correct" : `✗ Answer: ${ans.correct}`}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              <div className="flex items-center justify-center gap-3 pt-4 border-t border-plum/10">
-                <button
-                  type="button"
-                  onClick={() => launchQuizSession()}
-                  className="imlaa-btn-primary py-3 px-6 text-base"
-                >
-                  Try Again
-                </button>
-                {selectedGroup && getTopicMistakeCount(selectedGroup.title) > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => handleStartDrill(selectedGroup, true)}
-                    className="imlaa-btn-secondary py-3 px-6 text-base text-rose-700"
-                  >
-                    Review Mistakes ({getTopicMistakeCount(selectedGroup.title)})
-                  </button>
-                )}
-                <button
-                  type="button"
-                  onClick={() => {
-                    stopQuizTimer();
-                    setViewMode("sets");
-                  }}
-                  className="imlaa-btn-secondary py-3 px-6 text-base"
-                >
-                  Return to Sets
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
+        <FlashcardQuizView
+          questions={quizQuestions}
+          index={quizIndex}
+          score={quizScore}
+          timerMinutes={quizTimerMinutes}
+          timeRemaining={quizTimeRemaining}
+          finished={quizFinished}
+          saving={isSavingQuizAnswer}
+          userAnswers={quizUserAnswers}
+          mistakeCount={selectedTopicMistakes}
+          onExit={handleExitQuiz}
+          onAnswer={handleQuizAnswer}
+          onRetry={launchQuizSession}
+          onReviewMistakes={() => handleStartDrill(selectedGroup, true)}
+          onReturn={handleExitQuiz}
+        />
       )}
 
       {quizModalOpen && (

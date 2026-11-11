@@ -1,6 +1,7 @@
 import { Outlet, useLocation } from "react-router";
 import NavigationDock from "../components/NavigationDock";
 import MinimalFooter from "../components/MinimalFooter";
+import { usePresenceTracking } from "../hooks/usePresenceTracking";
 
 /**
  * Universal Workspace Layout Shell
@@ -14,6 +15,9 @@ export default function WorkspaceLayout() {
   const { pathname } = useLocation();
   const normalizedPath = pathname.replace(/\/+$/, "") || "/";
   const hideWorkspaceChrome = normalizedPath === "/workspace/developer/application";
+
+  // Publishes this session to the admin "Currently Active" roster.
+  usePresenceTracking();
 
   return (
     <div className="min-h-screen w-full bg-white text-body-dark relative flex flex-col antialiased overflow-x-hidden">
