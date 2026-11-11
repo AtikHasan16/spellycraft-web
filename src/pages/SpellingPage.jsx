@@ -1,5 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import RandomQuizSetupModal from "../components/RandomQuizSetupModal";
+import SpellingHeader from "../components/spelling/SpellingHeader";
+import SpellingSetsView from "../components/spelling/SpellingSetsView";
+import SpellingDrillView from "../components/spelling/SpellingDrillView";
+import SpellingQuizView from "../components/spelling/SpellingQuizView";
+import SpellingSessionSummary from "../components/spelling/SpellingSessionSummary";
 import { useCountdownTimer } from "../hooks/useCountdownTimer";
 import { useModalEffects } from "../hooks/useModalEffects";
 import apiClient from "../services/apiClient";
@@ -8,10 +13,7 @@ import { supabase } from "../services/supabaseClient";
 import { speakWithMicrosoftTTS, stopAudioPlayback } from "../utils/speechTts";
 import { showErrorAlert } from "../utils/sweetalert";
 import { secureShuffle } from "../utils/cryptoRandom";
-import {
-  getVocabularyMeaning,
-  MEANING_LANGUAGES,
-} from "../utils/meaningLanguages";
+import { MEANING_LANGUAGES } from "../utils/meaningLanguages";
 import {
   getSpellingMasterySummary,
   getSpellingMistakes,
@@ -19,53 +21,50 @@ import {
   recordSpellingAttempt,
   saveSpellingMastery,
 } from "../utils/spellingMastery";
-import AudioEqualizer from "../components/AudioEqualizer";
 import {
-  HiSpeakerWave,
-  HiChevronLeft,
-  HiChevronRight,
-  HiCheckCircle,
-  HiExclamationCircle,
-  HiArrowLeft,
-  HiClock,
-  HiSparkles,
-  HiEye,
-  HiUser,
-  HiAcademicCap,
-} from "react-icons/hi2";
+  buildSpellingGroups,
+  buildSpellingMistakes,
+  paginateSpellingGroups,
+} from "../utils/spellingGroups";
 
 const PARTS = ["All Active", "Listening Vocabs", "Uploaded", "Mistakes"];
 
+/**
+ * Spelling page (src/pages/SpellingPage.jsx)
+ * Orchestration only: data fetching, dictation/quiz state, persistence, and
+ * delegation to src/components/spelling/* presentational components.
+ */
 export default function SpellingPage() {
   const { user, isAdmin } = useAuth();
   const [preferredMeaningLanguage, setPreferredMeaningLanguage] = useState("en");
 
-  // Navigation states: 'sets' | 'drill' | 'finished' | 'quiz'
+  // Navigation: 'sets' | 'drill' | 'finished' | 'quiz'
   const [activePart, setActivePart] = useState("All Active");
   const [selectedGroup, setSelectedGroup] = useState(null);
   const [viewMode, setViewMode] = useState("sets");
+  const [groupsPage, setGroupsPage] = useState(0);
 
-  // Words & Drill States
+  // Drill state
   const [words, setWords] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [spellingInput, setSpellingInput] = useState("");
-  const [statusFeedback, setStatusFeedback] = useState(null); // null | 'correct' | 'incorrect' | 'revealed'
+  const [statusFeedback, setStatusFeedback] = useState(null);
   const [hasAnsweredCurrent, setHasAnsweredCurrent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [evaluating, setEvaluating] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [slideDirection, setSlideDirection] = useState("next");
 
-  // Per-Session Counts (Item 2)
+  // Per-session counts
   const [sessionCorrect, setSessionCorrect] = useState([]);
   const [sessionMisspelled, setSessionMisspelled] = useState([]);
 
-  // Mistakes Only Mode
+  // Mistakes-only mode
   const [mistakesOnly, setMistakesOnly] = useState(false);
   const [mistakesList, setMistakesList] = useState([]);
   const [drillRequest, setDrillRequest] = useState(null);
 
-  // DB Progress
+  // Persistence
   const [vocabStats, setVocabStats] = useState(null);
   const [userProgress, setUserProgress] = useState(null);
   const [mastery, setMastery] = useState({});
@@ -74,6 +73,25 @@ export default function SpellingPage() {
   const sessionStartTimeRef = useRef(null);
   const isMountedRef = useRef(true);
   const loadWordsRequestId = useRef(0);
+
+  // Quiz state
+  const [quizModalOpen, setQuizModalOpen] = useState(false);
+  const [quizTopic, setQuizTopic] = useState(null);
+  const [quizQuantity, setQuizQuantity] = useState(10);
+  const [quizTimerMinutes, setQuizTimerMinutes] = useState(0);
+  const [quizQuestions, setQuizQuestions] = useState([]);
+  const [quizIndex, setQuizIndex] = useState(0);
+  const [quizScore, setQuizScore] = useState(0);
+  const [quizInput, setQuizInput] = useState("");
+  const [quizMisspelled, setQuizMisspelled] = useState([]);
+  const [quizSubmitting, setQuizSubmitting] = useState(false);
+  const [quizTimeRemaining, setQuizTimeRemaining] = useState(0);
+  const [quizFinished, setQuizFinished] = useState(false);
+  const { startTimer: startQuizTimer, stopTimer: stopQuizTimer } = useCountdownTimer(
+    setQuizTimeRemaining,
+    () => setQuizFinished(true),
+  );
+  useModalEffects(quizModalOpen, setQuizModalOpen);
 
   useEffect(() => {
     let active = true;
@@ -125,23 +143,6 @@ export default function SpellingPage() {
     };
   }, []);
 
-  // Random Quiz (Item 5)
-  const [quizModalOpen, setQuizModalOpen] = useState(false);
-  const [quizTopic, setQuizTopic] = useState(null);
-  const [quizQuantity, setQuizQuantity] = useState(10);
-  const [quizTimerMinutes, setQuizTimerMinutes] = useState(0); // 0 = untimed
-  const [quizQuestions, setQuizQuestions] = useState([]);
-  const [quizIndex, setQuizIndex] = useState(0);
-  const [quizScore, setQuizScore] = useState(0);
-  const [quizInput, setQuizInput] = useState("");
-  const [quizMisspelled, setQuizMisspelled] = useState([]);
-  const [quizSubmitting, setQuizSubmitting] = useState(false);
-  const [quizTimeRemaining, setQuizTimeRemaining] = useState(0);
-  const [quizFinished, setQuizFinished] = useState(false);
-  const { startTimer: startQuizTimer, stopTimer: stopQuizTimer } =
-    useCountdownTimer(setQuizTimeRemaining, () => setQuizFinished(true));
-  useModalEffects(quizModalOpen, setQuizModalOpen);
-
   const masteryOwnerId = user?.id || "guest";
   useEffect(() => {
     try {
@@ -157,22 +158,18 @@ export default function SpellingPage() {
       );
     }
   }, [masteryOwnerId]);
-  const visibleMastery =
-    masteryLoadedFor === masteryOwnerId ? mastery : {};
+
+  // Avoid flashing the previous user's mastery while the new one loads.
+  const visibleMastery = masteryLoadedFor === masteryOwnerId ? mastery : {};
 
   const recordLocalMastery = (topic, word, outcome) => {
-    const updatedMastery = recordSpellingAttempt(
-      masteryRef.current,
-      topic,
-      word,
-      outcome,
-    );
+    const updatedMastery = recordSpellingAttempt(masteryRef.current, topic, word, outcome);
     saveSpellingMastery(masteryOwnerId, updatedMastery);
     masteryRef.current = updatedMastery;
     setMastery(updatedMastery);
   };
 
-  const saveSpellingResult = async (word, outcome, topic, currentIndex) => {
+  const saveSpellingResult = async (word, outcome, topic, index) => {
     try {
       recordLocalMastery(topic, word, outcome);
     } catch (error) {
@@ -191,7 +188,7 @@ export default function SpellingPage() {
           topic,
           word: word.word,
           isCorrect: outcome === "know",
-          currentIndex,
+          currentIndex: index,
         });
         if (result.data?.success && result.data.data) {
           setUserProgress(result.data.data);
@@ -204,6 +201,7 @@ export default function SpellingPage() {
         );
       }
 
+      // Correct spelling also clears an older flashcard mistake for that word.
       if (outcome === "know") {
         try {
           await apiClient.post("/flashcard/progress", {
@@ -211,7 +209,7 @@ export default function SpellingPage() {
             topic,
             word: word.word,
             status: "knew",
-            lastIndex: currentIndex,
+            lastIndex: index,
           });
         } catch (error) {
           console.error("Could not clear the flashcard mistake after spelling practice:", error);
@@ -225,7 +223,6 @@ export default function SpellingPage() {
     return true;
   };
 
-  // Fetch stats & user spelling progress
   const fetchStats = useCallback(async () => {
     try {
       const res = await apiClient.get("/vocabulary/stats", {
@@ -250,7 +247,10 @@ export default function SpellingPage() {
     if (!targetId) return;
     try {
       const res = await apiClient.get("/spelling/progress", {
-        params: { userId: targetId, topic: selectedGroup?.title || "Academic Word List: Sublist A" },
+        params: {
+          userId: targetId,
+          topic: selectedGroup?.title || "Academic Word List: Sublist A",
+        },
       });
       if (isMountedRef.current && res.data?.success && res.data.data) {
         setUserProgress(res.data.data);
@@ -267,170 +267,92 @@ export default function SpellingPage() {
     fetchProgress();
   }, [fetchStats, fetchProgress]);
 
-  // Compute dynamic topic groups
-  const dynamicGroups = [];
-  const activeList = vocabStats?.activeTopics || [];
-  if (activeList.length > 0) {
-    activeList.forEach((act, idx) => {
-      const totalWords = act.count ?? 0;
-      const savedSummary = getSpellingMasterySummary(visibleMastery, act.title);
-      const legacySummary = userProgress?.progressByTopic?.[act.title];
-      const hasLocalResults = savedSummary.total > 0;
-      const mastered = hasLocalResults
-        ? savedSummary.know
-        : legacySummary?.mastered ||
-          (selectedGroup?.title === act.title
-            ? userProgress?.masteredWords?.length
-            : 0) ||
-          0;
-      const incorrect = hasLocalResults
-        ? savedSummary.doNotKnow + savedSummary.forgot
-        : legacySummary?.incorrect ||
-          (selectedGroup?.title === act.title
-            ? userProgress?.incorrectWords?.length
-            : 0) ||
-          0;
-      const percent = totalWords > 0 ? Math.min(100, Math.round((mastered / totalWords) * 100)) : 0;
+  // Grouping and mistake derivation live in a pure utility module.
+  const dynamicGroups = buildSpellingGroups({
+    vocabStats,
+    visibleMastery,
+    userProgress,
+    selectedGroupTitle: selectedGroup?.title || null,
+    isAdmin,
+    userName: user?.name,
+  });
+  const allMistakes = buildSpellingMistakes(visibleMastery, dynamicGroups);
 
-      dynamicGroups.push({
-        id: `spelling-active-${idx}`,
-        part: "All Active",
-        title: act.title,
-        description: act.title === "Academic Word List: Sublist A"
-          ? "High-frequency academic stems, Latin morphemes & IELTS Band 8+ spelling dictation."
-          : `Active official curriculum corpus with ${totalWords} spelling terms.`,
-        wordsCount: totalWords,
-        masteredCount: mastered,
-        incorrectCount: incorrect,
-        percent,
-        hasMistakes: incorrect > 0,
-      });
-    });
-  }
-
-  // Listening Vocabs
-  const listeningList = vocabStats?.listeningTopics || [];
-  if (listeningList.length > 0) {
-    listeningList.forEach((lis, idx) => {
-      const summary = getSpellingMasterySummary(visibleMastery, lis.title);
-      const incorrect = summary.doNotKnow + summary.forgot;
-      dynamicGroups.push({
-        id: `spelling-listening-${idx}`,
-        part: "Listening Vocabs",
-        title: lis.title,
-        description: `IELTS listening module vocabulary (${lis.count} lexemes).`,
-        wordsCount: lis.count,
-        masteredCount: summary.know,
-        incorrectCount: incorrect,
-        percent: lis.count > 0 ? Math.min(100, Math.round((summary.know / lis.count) * 100)) : 0,
-        hasMistakes: incorrect > 0,
-      });
-    });
-  }
-
-  // Uploaded
-  const uploadedList = vocabStats?.uploadedTopics || [];
-  if (uploadedList.length > 0) {
-    uploadedList.forEach((up, idx) => {
-      const summary = getSpellingMasterySummary(visibleMastery, up.title);
-      const incorrect = summary.doNotKnow + summary.forgot;
-      dynamicGroups.push({
-        id: `spelling-uploaded-${idx}`,
-        part: "Uploaded",
-        title: up.title,
-        description: `Custom uploaded corpus category with ${up.count} terms.`,
-        wordsCount: up.count,
-        uploaderName: up.uploaderName || (isAdmin ? "Admin" : (user?.name || "You")),
-        masteredCount: summary.know,
-        incorrectCount: incorrect,
-        percent: up.count > 0 ? Math.min(100, Math.round((summary.know / up.count) * 100)) : 0,
-        hasMistakes: incorrect > 0,
-      });
-    });
-  }
-
-  const allMistakes = getSpellingMistakes(visibleMastery).map((entry) => ({
-    ...entry,
-    group: dynamicGroups.find((group) => group.title === entry.topic) || {
-      title: entry.topic,
-      part: "All Active",
-      wordsCount: 0,
-    },
-  }));
-
-  // Load words for spelling drill
-  const loadWordsForDrill = useCallback(async (group, onlyMistakes = false) => {
-    const requestId = ++loadWordsRequestId.current;
-    setLoading(true);
-    setSpellingInput("");
-    setStatusFeedback(null);
-    setHasAnsweredCurrent(false);
-    try {
-      const res = await apiClient.get("/vocabulary", {
-        params: {
-          topic: group.title,
-          userId: user?.id,
-          userRole: user?.role || "general",
-          userName: user?.name,
-        },
-      });
-      let loaded = res.data?.data || [];
-      if (loaded.length === 0) {
-        const fb = await apiClient.get("/vocabulary", {
+  const loadWordsForDrill = useCallback(
+    async (group, onlyMistakes = false) => {
+      const requestId = ++loadWordsRequestId.current;
+      setLoading(true);
+      setSpellingInput("");
+      setStatusFeedback(null);
+      setHasAnsweredCurrent(false);
+      try {
+        const res = await apiClient.get("/vocabulary", {
           params: {
+            topic: group.title,
             userId: user?.id,
             userRole: user?.role || "general",
             userName: user?.name,
           },
         });
-        loaded = fb.data?.data || [];
-      }
-
-      if (loadWordsRequestId.current !== requestId || !isMountedRef.current) return;
-
-      setWords(loaded);
-      if (onlyMistakes) {
-        let legacyMistakes = [];
-        if (user?.id) {
-          try {
-            const progress = await apiClient.get("/spelling/progress", {
-              params: { userId: user.id, topic: group.title },
-            });
-            legacyMistakes = progress.data?.data?.incorrectWords || [];
-          } catch (error) {
-            console.warn("Could not load saved spelling mistakes:", error);
-          }
+        let loaded = res.data?.data || [];
+        // Some uploaded groups return no rows by topic; fall back to the
+        // caller's visible corpus rather than showing an empty drill.
+        if (loaded.length === 0) {
+          const fallback = await apiClient.get("/vocabulary", {
+            params: {
+              userId: user?.id,
+              userRole: user?.role || "general",
+              userName: user?.name,
+            },
+          });
+          loaded = fallback.data?.data || [];
         }
-        const savedMistakes = getSpellingMistakes(
-          masteryRef.current,
-          group.title,
-        ).map((entry) => entry.word);
-        const loadedByKey = new Map(
-          loaded.map((word) => [word.word.trim().toLocaleLowerCase(), word]),
-        );
-        const mistakesByKey = new Map(
-          [
-            ...savedMistakes.map((word) => word.word),
-            ...legacyMistakes,
-          ].map((wordText) => {
-            const key = wordText.trim().toLocaleLowerCase();
-            return [key, loadedByKey.get(key) || { word: wordText }];
-          }),
-        );
-        setMistakesList([...mistakesByKey.values()]);
+
+        if (loadWordsRequestId.current !== requestId || !isMountedRef.current) return;
+
+        setWords(loaded);
+        if (onlyMistakes) {
+          let legacyMistakes = [];
+          if (user?.id) {
+            try {
+              const progress = await apiClient.get("/spelling/progress", {
+                params: { userId: user.id, topic: group.title },
+              });
+              legacyMistakes = progress.data?.data?.incorrectWords || [];
+            } catch (error) {
+              console.warn("Could not load saved spelling mistakes:", error);
+            }
+          }
+          const savedMistakes = getSpellingMistakes(masteryRef.current, group.title).map(
+            (entry) => entry.word,
+          );
+          const loadedByKey = new Map(
+            loaded.map((word) => [word.word.trim().toLocaleLowerCase(), word]),
+          );
+          const mistakesByKey = new Map(
+            [...savedMistakes.map((word) => word.word), ...legacyMistakes].map(
+              (wordText) => {
+                const key = wordText.trim().toLocaleLowerCase();
+                return [key, loadedByKey.get(key) || { word: wordText }];
+              },
+            ),
+          );
+          setMistakesList([...mistakesByKey.values()]);
+        }
+        if (loadWordsRequestId.current !== requestId || !isMountedRef.current) return;
+        setCurrentIndex(0);
+      } catch (err) {
+        if (loadWordsRequestId.current === requestId && isMountedRef.current) {
+          console.error("Failed to load spelling words:", err);
+        }
+      } finally {
+        if (loadWordsRequestId.current === requestId && isMountedRef.current) {
+          setLoading(false);
+        }
       }
-      if (loadWordsRequestId.current !== requestId || !isMountedRef.current) return;
-      setCurrentIndex(0);
-    } catch (err) {
-      if (loadWordsRequestId.current === requestId && isMountedRef.current) {
-        console.error("Failed to load spelling words:", err);
-      }
-    } finally {
-      if (loadWordsRequestId.current === requestId && isMountedRef.current) {
-        setLoading(false);
-      }
-    }
-  }, [user]);
+    },
+    [user],
+  );
 
   const handleStartDrill = useCallback((group, isMistakes = false) => {
     setSelectedGroup(group);
@@ -450,7 +372,10 @@ export default function SpellingPage() {
 
   const handleReturnToSets = () => {
     if (sessionStartTimeRef.current && user?.id) {
-      const durationSeconds = Math.max(1, Math.round((Date.now() - sessionStartTimeRef.current) / 1000));
+      const durationSeconds = Math.max(
+        1,
+        Math.round((Date.now() - sessionStartTimeRef.current) / 1000),
+      );
       apiClient
         .post("/user/study-session", { durationSeconds })
         .catch((err) => console.warn("Could not save study session:", err));
@@ -471,21 +396,23 @@ export default function SpellingPage() {
     MEANING_LANGUAGES.find(({ code }) => code === preferredMeaningLanguage)?.label ||
     "English";
 
-  // Speak word with Christopher Neural + instant fallback
-  const speakTargetWord = useCallback((overrideWord) => {
-    const text = overrideWord || currentWord?.word;
-    if (!text) return;
-    speakWithMicrosoftTTS(text, {
-      voice: "en-US-ChristopherNeural",
-      vocabId: currentWord?.id,
-      audioUrl: currentWord?.audioUrl || currentWord?.audio_url,
-      onStart: () => setIsSpeaking(true),
-      onEnd: () => setIsSpeaking(false),
-      onError: () => setIsSpeaking(false),
-    });
-  }, [currentWord]);
+  const speakTargetWord = useCallback(
+    (overrideWord) => {
+      const text = overrideWord || currentWord?.word;
+      if (!text) return;
+      speakWithMicrosoftTTS(text, {
+        voice: "en-US-ChristopherNeural",
+        vocabId: currentWord?.id,
+        audioUrl: currentWord?.audioUrl || currentWord?.audio_url,
+        onStart: () => setIsSpeaking(true),
+        onEnd: () => setIsSpeaking(false),
+        onError: () => setIsSpeaking(false),
+      });
+    },
+    [currentWord],
+  );
 
-  // Auto-speak word whenever current index changes in drill
+  // Dictation should be audible as soon as a new word appears.
   useEffect(() => {
     if (viewMode === "drill" && currentWord) {
       speakTargetWord(currentWord.word);
@@ -498,7 +425,6 @@ export default function SpellingPage() {
     };
   }, []);
 
-  // Handle Check Spelling Form Submission (Item 2)
   const handleCheckSpelling = async (e) => {
     if (e) e.preventDefault();
     if (!currentWord || evaluating || !spellingInput.trim()) return;
@@ -532,7 +458,6 @@ export default function SpellingPage() {
     setEvaluating(false);
   };
 
-  // Reveal Answer / Give up
   const handleRevealAnswer = async () => {
     if (!currentWord || hasAnsweredCurrent) return;
     const saved = await saveSpellingResult(
@@ -548,12 +473,9 @@ export default function SpellingPage() {
     setSessionMisspelled((prev) => [...new Set([...prev, currentWord.word])]);
   };
 
-  // Advance to next word
   const handleNextWord = useCallback(() => {
-    // CRUCIAL RULE (Item 2): CANNOT move forward without answering current spelling card!
-    if (!hasAnsweredCurrent) {
-      return;
-    }
+    // Guard: a learner may not advance without answering or revealing.
+    if (!hasAnsweredCurrent) return;
 
     if (mistakesOnly && currentWord && statusFeedback === "correct") {
       const currentKey = currentWord.word.trim().toLocaleLowerCase();
@@ -591,12 +513,20 @@ export default function SpellingPage() {
     mistakesList,
   ]);
 
-  // Keyboard Navigation & Anti-Holding Bug Fix (Item 2)
+  const handlePrevWord = () => {
+    if (currentIndex > 0) {
+      setSlideDirection("prev");
+      setCurrentIndex((prev) => prev - 1);
+      setSpellingInput("");
+      setStatusFeedback(null);
+      setHasAnsweredCurrent(false);
+    }
+  };
+
   useEffect(() => {
     if (viewMode !== "drill") return;
 
     const handleKeyDown = (e) => {
-      // FIX HOLDING KEYS: Stop auto-repeat
       if (e.repeat) return;
 
       const isInput = e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA";
@@ -604,10 +534,7 @@ export default function SpellingPage() {
       if (e.key === "ArrowRight") {
         if (isInput && e.target.selectionStart < e.target.value.length) return;
         e.preventDefault();
-        // User cannot move forward without answering!
-        if (hasAnsweredCurrent) {
-          handleNextWord();
-        }
+        if (hasAnsweredCurrent) handleNextWord();
       } else if (e.key === "ArrowLeft") {
         if (isInput && e.target.selectionStart > 0) return;
         e.preventDefault();
@@ -625,13 +552,18 @@ export default function SpellingPage() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [viewMode, hasAnsweredCurrent, currentIndex, activeWords.length, handleNextWord]);
 
-  // ==========================================================
-  // RANDOM SPELLING QUIZ (Item 5)
-  // ==========================================================
   const startRandomQuiz = (group) => {
     setSelectedGroup(group || null);
     setQuizTopic(group?.title || null);
     setQuizModalOpen(true);
+  };
+
+  const speakQuizWord = (word) => {
+    if (!word?.word) return;
+    speakWithMicrosoftTTS(word.word, {
+      vocabId: word.id,
+      audioUrl: word.audioUrl || word.audio_url,
+    });
   };
 
   const launchQuizSession = async () => {
@@ -640,22 +572,14 @@ export default function SpellingPage() {
     try {
       const pageSize = 500;
       const firstPage = await apiClient.get("/vocabulary", {
-        params: {
-          topic: quizTopic || undefined,
-          page: 1,
-          pageSize,
-        },
+        params: { topic: quizTopic || undefined, page: 1, pageSize },
       });
       const corpus = [...(firstPage.data?.data || [])];
       const totalCount = firstPage.data?.totalCount ?? corpus.length;
       const pageCount = Math.ceil(totalCount / pageSize);
       for (let page = 2; page <= pageCount; page += 1) {
         const pageResult = await apiClient.get("/vocabulary", {
-          params: {
-            topic: quizTopic || undefined,
-            page,
-            pageSize,
-          },
+          params: { topic: quizTopic || undefined, page, pageSize },
         });
         const pageWords = pageResult.data?.data || [];
         if (pageWords.length === 0) break;
@@ -678,19 +602,10 @@ export default function SpellingPage() {
       setQuizInput("");
       setQuizMisspelled([]);
       setQuizFinished(false);
-
       setViewMode("quiz");
 
-      // Auto speak first question
       if (selected[0]) {
-        setTimeout(
-          () =>
-            speakWithMicrosoftTTS(selected[0].word, {
-              vocabId: selected[0].id,
-              audioUrl: selected[0].audioUrl || selected[0].audio_url,
-            }),
-          300,
-        );
+        setTimeout(() => speakQuizWord(selected[0]), 300);
       }
 
       startQuizTimer(quizTimerMinutes);
@@ -706,40 +621,35 @@ export default function SpellingPage() {
     e.preventDefault();
     if (!quizInput.trim() || quizSubmitting) return;
 
-    const q = quizQuestions[quizIndex];
-    if (!q) return;
-    const isCorrect = quizInput.trim().toLowerCase() === q.word.trim().toLowerCase();
-    const outcome = isCorrect ? "know" : "doNotKnow";
-    const topic = q.topic || quizTopic || "Academic Word List: Sublist A";
+    const question = quizQuestions[quizIndex];
+    if (!question) return;
+    const isCorrect =
+      quizInput.trim().toLowerCase() === question.word.trim().toLowerCase();
+    const topic = question.topic || quizTopic || "Academic Word List: Sublist A";
     setQuizSubmitting(true);
     try {
-      const saved = await saveSpellingResult(q, outcome, topic, quizIndex);
+      const saved = await saveSpellingResult(
+        question,
+        isCorrect ? "know" : "doNotKnow",
+        topic,
+        quizIndex,
+      );
       if (!saved) return;
       if (isCorrect) {
         setQuizScore((prev) => prev + 1);
       } else {
         setQuizMisspelled((prev) => [
           ...new Map(
-            [...prev, q].map((word) => [
-              word.word.toLocaleLowerCase(),
-              word,
-            ]),
+            [...prev, question].map((word) => [word.word.toLocaleLowerCase(), word]),
           ).values(),
         ]);
       }
 
       setQuizInput("");
       if (quizIndex < quizQuestions.length - 1) {
-        const nextQ = quizQuestions[quizIndex + 1];
+        const nextQuestion = quizQuestions[quizIndex + 1];
         setQuizIndex((prev) => prev + 1);
-        setTimeout(
-          () =>
-            speakWithMicrosoftTTS(nextQ.word, {
-              vocabId: nextQ.id,
-              audioUrl: nextQ.audioUrl || nextQ.audio_url,
-            }),
-          300,
-        );
+        setTimeout(() => speakQuizWord(nextQuestion), 300);
       } else {
         stopQuizTimer();
         setQuizFinished(true);
@@ -749,30 +659,18 @@ export default function SpellingPage() {
     }
   };
 
-  const formatTimer = (seconds) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs < 10 ? "0" : ""}${secs}`;
+  const filteredGroups = dynamicGroups.filter((group) => group.part === activePart);
+  const {
+    totalPages: totalGroupsPages,
+    page: currentGroupsPage,
+    items: paginatedGroups,
+  } = paginateSpellingGroups(filteredGroups, groupsPage);
+
+  const handlePartChange = (part) => {
+    setActivePart(part);
+    setGroupsPage(0);
   };
 
-  const filteredGroups = dynamicGroups.filter((g) => g.part === activePart);
-
-// Pagination for corpus groups (6 per page)
-const GROUPS_PER_PAGE = 6;
-const [groupsPage, setGroupsPage] = useState(0);
-const totalGroupsPages = Math.ceil(filteredGroups.length / GROUPS_PER_PAGE);
-const paginatedGroups = filteredGroups.slice(
-  groupsPage * GROUPS_PER_PAGE,
-  (groupsPage + 1) * GROUPS_PER_PAGE
-);
-
-const goToPrevGroupsPage = () => setGroupsPage((p) => Math.max(0, p - 1));
-const goToNextGroupsPage = () => setGroupsPage((p) => Math.min(totalGroupsPages - 1, p + 1));
-
-// Reset page when activePart changes
-useEffect(() => {
-  setGroupsPage(0);
-}, [activePart]);
   const activeTopic = selectedGroup?.title || "Academic Word List: Sublist A";
   const corpusMastery = getSpellingMasterySummary(visibleMastery, activeTopic);
   const quizMastery = quizTopic
@@ -789,767 +687,127 @@ useEffect(() => {
         { know: 0, doNotKnow: 0, forgot: 0 },
       );
   const topicMistakes = getSpellingMistakes(visibleMastery, activeTopic);
+  const quizMistakeCount = quizTopic
+    ? getSpellingMistakes(visibleMastery, quizTopic).length
+    : 0;
+
+  const handlePracticeTopicMistakes = () => {
+    const mistakeWords = topicMistakes.map((entry) => entry.word);
+    setMistakesList(mistakeWords);
+    setMistakesOnly(true);
+    setCurrentIndex(0);
+    setSpellingInput("");
+    setStatusFeedback(null);
+    setHasAnsweredCurrent(false);
+    setSessionCorrect([]);
+    setSessionMisspelled([]);
+    setViewMode("drill");
+  };
+
+  const handleStartOver = () => {
+    setMistakesOnly(false);
+    setCurrentIndex(0);
+    setSpellingInput("");
+    setStatusFeedback(null);
+    setHasAnsweredCurrent(false);
+    setSessionCorrect([]);
+    setSessionMisspelled([]);
+    setViewMode("drill");
+  };
+
+  const handleExitQuiz = () => {
+    stopQuizTimer();
+    setViewMode("sets");
+  };
 
   return (
     <div className="w-full flex flex-col space-y-7 animate-slide-up">
-      {/* 1. Header Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 pb-4 border-b border-plum/15">
-        <div>
-          <div className="flex flex-wrap items-center gap-2 sm:space-x-3">
-            <h1 className="text-2xl sm:text-3xl font-black text-body-dark tracking-tight">
-              Spelling Dictation
-            </h1>
-            <span className="imlaa-badge text-xs sm:text-base py-0.5 sm:py-1 px-2.5 sm:px-3">
-              Acoustic Input
-            </span>
-          </div>
-          <p className="text-xs sm:text-base text-muted-label mt-1">
-            Listen to native pronunciations, transcribe accurately, and eliminate misspellings.
-          </p>
-        </div>
+      <SpellingHeader loading={loading} onStartQuiz={startRandomQuiz} />
 
-        <button
-          type="button"
-          onClick={() => startRandomQuiz()}
-          disabled={loading}
-          className="imlaa-btn-secondary text-xs sm:text-sm py-2 px-3 sm:px-4 flex items-center space-x-2 self-start sm:self-auto min-h-11"
-        >
-          <HiSparkles className="w-4 h-4 text-plum shrink-0" />
-          <span>Random Spelling Quiz</span>
-        </button>
-      </div>
-
-      {/* ==================================================== */}
-      {/* 2. CORPUS SETS VIEW                                  */}
-      {/* ==================================================== */}
       {viewMode === "sets" && (
-        <div className="flex flex-col space-y-6">
-          {/* Part Filter Tabs */}
-          <div className="flex flex-wrap items-center gap-2">
-            {PARTS.map((part) => (
-              <button
-                key={part}
-                type="button"
-                onClick={() => setActivePart(part)}
-                className={`imlaa-tab-btn text-base px-5 py-2.5 min-h-11 ${
-                  activePart === part ? "active" : ""
-                }`}
-              >
-                {part === "Mistakes"
-                  ? `Mistakes (${allMistakes.length})`
-                  : part}
-              </button>
-            ))}
-          </div>
-
-          {/* Vocabulary Groups Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {activePart === "Mistakes" ? (
-              allMistakes.length === 0 ? (
-                <p className="imlaa-card md:col-span-2 lg:col-span-3 p-6 text-center text-muted-label">
-                  No spelling mistakes to review. Words you spell correctly will leave this list.
-                </p>
-              ) : (
-                allMistakes.map((entry) => (
-                  <div
-                    key={`${entry.topic}:${entry.word.word.toLocaleLowerCase()}`}
-                    className="imlaa-card p-6 flex flex-col justify-between border border-rose-200"
-                  >
-                    <div>
-                      <div className="flex items-center justify-between gap-2 mb-2">
-                        <span className="text-xs font-bold uppercase tracking-wide text-rose-700">
-                          {entry.status === "forgot" ? "Forgot" : "Do Not Know"}
-                        </span>
-                        <span className="text-xs text-muted-label">
-                          {(entry.attempts?.doNotKnow || 0) +
-                            (entry.attempts?.forgot || 0)}{" "}
-                          missed attempts
-                        </span>
-                      </div>
-                      <h3 className="text-xl font-bold text-body-dark">
-                        Correct spelling: {entry.word.word}
-                      </h3>
-                      <p className="text-sm text-muted-label mt-1">
-                        {entry.topic}
-                      </p>
-                      <p className="text-sm text-muted-label mt-3">
-                        {meaningLanguageLabel} meaning:{" "}
-                        {getVocabularyMeaning(entry.word, preferredMeaningLanguage) ||
-                          `No ${meaningLanguageLabel} meaning saved yet.`}
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => handleStartDrill(entry.group, true)}
-                      className="imlaa-btn-secondary mt-4 py-2.5 px-4 text-rose-700 font-bold min-h-11"
-                    >
-                      Practice this corpus
-                    </button>
-                  </div>
-                ))
-              )
-            ) : paginatedGroups.length === 0 ? (
-              <p className="imlaa-card md:col-span-2 lg:col-span-3 p-6 text-center text-muted-label">
-                No vocabulary sets are available in this tab yet.
-              </p>
-                        ) : paginatedGroups.map((group) => (
-              <div
-                key={group.id}
-                className="imlaa-card p-6 flex flex-col justify-between hover:shadow-md transition-all duration-200 border border-plum/20"
-              >
-                <div>
-                  <div className="flex items-center justify-between text-base font-semibold mb-2">
-                    <span className="text-muted-label font-semibold">
-                      {group.wordsCount} Terms
-                    </span>
-                    {group.hasMistakes && (
-                      <span className="text-rose-600 bg-rose-50 px-2 py-0.5 rounded text-xs font-bold">
-                        {group.incorrectCount} Misspelled
-                      </span>
-                    )}
-                  </div>
-
-                  <h3 className="text-xl font-bold text-body-dark leading-snug mb-1">
-                    {group.title}
-                  </h3>
-
-                  {/* Corpus Uploader or Curriculum Pill */}
-                  <div className="mb-3">
-                    {group.part === "Uploaded" ? (
-                      <span className="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-md bg-plum/10 text-plum text-xs font-semibold border border-plum/20">
-                        <HiUser className="w-3.5 h-3.5 text-plum" />
-                        <span>Uploaded by {group.uploaderName || user?.name || "You"}</span>
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-md bg-stone-100 text-stone-700 text-xs font-semibold border border-stone-200">
-                        <HiAcademicCap className="w-3.5 h-3.5 text-plum" />
-                        <span>Curriculum Corpus</span>
-                      </span>
-                    )}
-                  </div>
-
-                  <p className="text-base text-muted-label leading-relaxed mb-4">
-                    {group.description}
-                  </p>
-                </div>
-
-                <div>
-                  {/* Progress Indicator */}
-                  <div className="mb-4">
-                    <div className="flex items-center justify-between text-xs font-semibold text-muted-label mb-1.5">
-                      <span>Spelling Accuracy</span>
-                      <span>{group.percent}%</span>
-                    </div>
-                    <div className="w-full bg-plum/10 rounded-full h-2 overflow-hidden">
-                      <div
-                        className="h-full rounded-full bg-plum transition-all duration-500"
-                        style={{ width: `${group.percent}%` }}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between pt-3 border-t border-plum/10 gap-2">
-                    {group.hasMistakes ? (
-                      <button
-                        type="button"
-                        onClick={() => handleStartDrill(group, true)}
-                        className="imlaa-btn-secondary text-xs py-2 px-3 text-rose-700 font-bold border-rose-300"
-                      >
-                        Mistakes ({group.incorrectCount})
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => startRandomQuiz(group)}
-                        className="imlaa-btn-secondary text-xs py-2 px-3 text-plum"
-                      >
-                        Quiz
-                      </button>
-                    )}
-
-                    <button
-                      type="button"
-                      disabled={!group.wordsCount || group.wordsCount === 0}
-                      onClick={() => handleStartDrill(group, false)}
-                      className="imlaa-btn-primary py-2 px-4 text-sm font-semibold"
-                    >
-                      Start Spelling
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Pagination Controls for Corpus Groups */}
-          {totalGroupsPages > 1 && (
-            <div className="flex items-center justify-center gap-3 mt-6">
-              <button
-                type="button"
-                onClick={goToPrevGroupsPage}
-                disabled={groupsPage === 0}
-                className="imlaa-btn-secondary min-h-11 min-w-11 p-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                aria-label="Previous page"
-              >
-                <HiChevronLeft className="w-5 h-5" />
-              </button>
-              <span className="text-sm font-semibold text-body-dark px-4">
-                Page {groupsPage + 1} of {totalGroupsPages}
-              </span>
-              <button
-                type="button"
-                onClick={goToNextGroupsPage}
-                disabled={groupsPage === totalGroupsPages - 1}
-                className="imlaa-btn-secondary min-h-11 min-w-11 p-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                aria-label="Next page"
-              >
-                <HiChevronRight className="w-5 h-5" />
-              </button>
-            </div>
-          )}
-        </div>
+        <SpellingSetsView
+          parts={PARTS}
+          activePart={activePart}
+          onPartChange={handlePartChange}
+          groups={paginatedGroups}
+          mistakes={allMistakes}
+          totalPages={totalGroupsPages}
+          currentPage={currentGroupsPage}
+          onPrevPage={() => setGroupsPage((page) => Math.max(0, page - 1))}
+          onNextPage={() =>
+            setGroupsPage((page) => Math.min(totalGroupsPages - 1, page + 1))
+          }
+          userName={user?.name}
+          meaningLanguageCode={preferredMeaningLanguage}
+          meaningLanguageLabel={meaningLanguageLabel}
+          onStartDrill={handleStartDrill}
+          onStartQuiz={startRandomQuiz}
+          onPracticeMistakes={(group) => handleStartDrill(group, true)}
+        />
       )}
 
-      {/* ==================================================== */}
-      {/* 3. ACTIVE SPELLING DRILL VIEW                        */}
-      {/* ==================================================== */}
       {viewMode === "drill" && (
-        <div className="w-full max-w-2xl mx-auto flex flex-col items-center space-y-6">
-          {/* Header Bar inside drill */}
-          <div className="w-full flex items-center justify-between text-base px-1">
-            <button
-              type="button"
-              onClick={handleReturnToSets}
-              className="inline-flex items-center space-x-2 text-plum hover:text-plum-hover font-semibold cursor-pointer"
-            >
-              <HiArrowLeft className="w-5 h-5" />
-              <span>Back to Sets</span>
-            </button>
-
-            {selectedGroup && (
-              <span className="imlaa-badge text-base">
-                {selectedGroup.title}
-              </span>
-            )}
-          </div>
-
-          {loading ? (
-            <div className="imlaa-card w-full p-16 text-center animate-pulse">
-              <div className="text-xl text-plum font-semibold">
-                Loading spelling list...
-              </div>
-            </div>
-          ) : !currentWord ? (
-            <div className="imlaa-card w-full p-12 text-center space-y-4">
-              <div className="text-2xl font-bold text-body-dark">
-                No words in this drill
-              </div>
-              <button
-                type="button"
-                onClick={handleReturnToSets}
-                className="imlaa-btn-primary text-base"
-              >
-                Choose Another Topic
-              </button>
-            </div>
-          ) : (
-            <div className="w-full flex flex-col space-y-6">
-              {/* Step Counter */}
-              <div className="w-full flex items-center justify-between px-1">
-                <span className="text-base font-bold text-body-dark bg-white px-3.5 py-1.5 rounded-xl border border-plum/20 shadow-xs">
-                  Word <span className="text-plum">{currentIndex + 1}</span> of {activeWords.length}
-                </span>
-
-                <span className="text-xs text-muted-label font-medium">
-                  {currentWord.pos || "Lexeme"}
-                </span>
-              </div>
-
-              {/* Main Dictation Card */}
-              <div
-                key={currentIndex}
-                className={`imlaa-card p-8 sm:p-12 text-center bg-white border border-plum/20 shadow-md flex flex-col items-center space-y-6 ${
-                  slideDirection === "next" ? "animate-slide-next" : "animate-slide-prev"
-                }`}
-              >
-                {/* Large Audio Speaker Button */}
-                <div className="flex flex-col items-center space-y-3">
-                  <div className="relative">
-                    <button
-                      type="button"
-                      onClick={() => speakTargetWord()}
-                      title="Click to Listen"
-                      aria-label="Play audio pronunciation"
-                      className="w-20 h-20 rounded-2xl bg-plum hover:bg-plum-hover text-white flex items-center justify-center transition shadow-md cursor-pointer active:scale-95 min-h-11 min-w-11 focus-visible:ring-2 focus-visible:ring-plum"
-                    >
-                      <HiSpeakerWave className={`w-10 h-10 ${isSpeaking ? "animate-pulse" : ""}`} />
-                    </button>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <AudioEqualizer isPlaying={isSpeaking} />
-                    <span className="text-sm text-muted-label font-medium">
-                      {isSpeaking ? "Playing audio..." : "Click to hear the pronunciation"}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Form Input */}
-                <form
-                  onSubmit={handleCheckSpelling}
-                  className="w-full max-w-md flex flex-col space-y-4"
-                >
-                  <input
-                    type="text"
-                    autoFocus
-                    disabled={hasAnsweredCurrent}
-                    value={spellingInput}
-                    onChange={(e) => setSpellingInput(e.target.value)}
-                    placeholder="Type what you hear..."
-                    className={`imlaa-input text-xl sm:text-2xl text-center py-4 px-6 tracking-wide transition-all ${
-                      statusFeedback === "correct"
-                        ? "border-emerald-600 focus:border-emerald-600 ring-2 ring-emerald-100 bg-emerald-50/30"
-                        : statusFeedback === "incorrect" || statusFeedback === "revealed"
-                        ? "border-rose-600 focus:border-rose-600 ring-2 ring-rose-100 bg-rose-50/30"
-                        : ""
-                    }`}
-                  />
-
-                  {/* Feedback Message */}
-                  {statusFeedback === "correct" && (
-                    <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-left space-y-2 animate-slide-up">
-                      <div className="flex items-center space-x-2 text-emerald-800 font-bold text-base">
-                        <HiCheckCircle className="w-5 h-5" />
-                        <span>Flawless Spelling!</span>
-                      </div>
-                      <div className="text-sm text-emerald-900">
-                        <strong>{currentWord.word}</strong>
-                      </div>
-                      <div className="text-sm text-emerald-900">
-                        {meaningLanguageLabel} meaning:{" "}
-                        {getVocabularyMeaning(currentWord, preferredMeaningLanguage) ||
-                          `No ${meaningLanguageLabel} meaning saved yet.`}
-                      </div>
-                    </div>
-                  )}
-
-                  {(statusFeedback === "incorrect" || statusFeedback === "revealed") && (
-                    <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-left space-y-2 animate-slide-up">
-                      <div className="flex items-center space-x-2 text-rose-800 font-bold text-base">
-                        <HiExclamationCircle className="w-5 h-5" />
-                        <span>Correct Spelling: <strong className="text-lg underline ml-1">{currentWord.word}</strong></span>
-                      </div>
-                      <div className="text-sm text-rose-900">
-                        {meaningLanguageLabel} meaning:{" "}
-                        {getVocabularyMeaning(currentWord, preferredMeaningLanguage) ||
-                          `No ${meaningLanguageLabel} meaning saved yet.`}
-                      </div>
-                      {currentWord.exampleUsage && (
-                        <p className="text-xs text-rose-700 italic">
-                          "{currentWord.exampleUsage}"
-                        </p>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Buttons */}
-                  <div className="flex flex-col sm:flex-row items-center gap-3 pt-2 w-full">
-                    {!hasAnsweredCurrent ? (
-                      <>
-                        <button
-                          type="submit"
-                          disabled={evaluating || !spellingInput.trim()}
-                          className="imlaa-btn-primary w-full sm:flex-1 py-3 sm:py-3.5 text-sm sm:text-base font-bold min-h-11"
-                        >
-                          Check Spelling
-                        </button>
-                        <button
-                          type="button"
-                          onClick={handleRevealAnswer}
-                          className="imlaa-btn-secondary w-full sm:w-auto py-3 sm:py-3.5 px-4 text-xs sm:text-sm flex items-center justify-center space-x-1.5 min-h-11"
-                          title="Reveal correct spelling"
-                        >
-                          <HiEye className="w-4 h-4 shrink-0" />
-                          <span>Reveal</span>
-                        </button>
-                      </>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={handleNextWord}
-                        className="imlaa-btn-primary w-full py-3 sm:py-3.5 text-sm sm:text-base font-bold flex items-center justify-center space-x-2 min-h-11"
-                      >
-                        <span>{currentIndex === activeWords.length - 1 ? "Complete Session" : "Next Word"}</span>
-                        <HiChevronRight className="w-5 h-5 shrink-0" />
-                      </button>
-                    )}
-                  </div>
-                </form>
-
-                {/* Anti-Skip Notice (Item 2 Rule) */}
-                {!hasAnsweredCurrent && (
-                  <p className="text-xs text-muted-label text-center">
-                    Answer or click "Reveal" to advance to the next word.
-                  </p>
-                )}
-              </div>
-
-              {sessionMisspelled.length > 0 && (
-                <section className="imlaa-card w-full p-5 border border-rose-200 bg-rose-50/50">
-                  <h3 className="text-base font-bold text-rose-800">
-                    Mistakes this session ({sessionMisspelled.length})
-                  </h3>
-                  <ul className="mt-3 flex flex-wrap gap-2">
-                    {sessionMisspelled.map((word) => (
-                      <li
-                        key={word}
-                        className="rounded-lg border border-rose-200 bg-white px-3 py-2 text-sm text-body-dark"
-                      >
-                        Correct spelling: <strong>{word}</strong>
-                      </li>
-                    ))}
-                  </ul>
-                </section>
-              )}
-
-              {/* Bottom Navigation */}
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-1 w-full">
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (currentIndex > 0) {
-                      setSlideDirection("prev");
-                      setCurrentIndex((prev) => prev - 1);
-                      setSpellingInput("");
-                      setStatusFeedback(null);
-                      setHasAnsweredCurrent(false);
-                    }
-                  }}
-                  disabled={currentIndex === 0}
-                  className="imlaa-btn-secondary py-2.5 sm:py-3 px-4 sm:px-5 text-sm sm:text-base flex items-center justify-center space-x-2 w-full sm:w-auto min-h-11"
-                >
-                  <HiChevronLeft className="w-5 h-5 shrink-0" />
-                  <span>Previous</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleNextWord}
-                  disabled={!hasAnsweredCurrent}
-                  className={`py-2.5 sm:py-3 px-5 sm:px-6 text-sm sm:text-base font-bold rounded-xl flex items-center justify-center space-x-2 transition w-full sm:w-auto min-h-11 ${
-                    !hasAnsweredCurrent
-                      ? "bg-plum/20 text-white/60 cursor-not-allowed"
-                      : "imlaa-btn-primary cursor-pointer"
-                  }`}
-                  title={!hasAnsweredCurrent ? "Please answer the current word first" : "Next Word"}
-                >
-                  <span>{currentIndex === activeWords.length - 1 ? "Finish" : "Next Word"}</span>
-                  <HiChevronRight className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
+        <SpellingDrillView
+          currentWord={currentWord}
+          currentIndex={currentIndex}
+          totalWords={activeWords.length}
+          spellingInput={spellingInput}
+          statusFeedback={statusFeedback}
+          hasAnsweredCurrent={hasAnsweredCurrent}
+          evaluating={evaluating}
+          isSpeaking={isSpeaking}
+          loading={loading}
+          slideDirection={slideDirection}
+          selectedGroup={selectedGroup}
+          meaningLanguageCode={preferredMeaningLanguage}
+          meaningLanguageLabel={meaningLanguageLabel}
+          sessionMisspelled={sessionMisspelled}
+          onBack={handleReturnToSets}
+          onInputChange={setSpellingInput}
+          onSubmit={handleCheckSpelling}
+          onReveal={handleRevealAnswer}
+          onNext={handleNextWord}
+          onPrev={handlePrevWord}
+          onSpeak={speakTargetWord}
+        />
       )}
 
-      {/* ==================================================== */}
-      {/* 4. FINISH SUMMARY SCREEN (Item 2 Requirement)        */}
-      {/* ==================================================== */}
       {viewMode === "finished" && (
-        <div className="w-full max-w-xl mx-auto imlaa-card p-8 sm:p-10 text-center space-y-7 animate-slide-up border border-plum/20 shadow-lg bg-white">
-          <div className="w-16 h-16 rounded-full bg-plum/10 text-plum mx-auto flex items-center justify-center">
-            <HiSparkles className="w-8 h-8" />
-          </div>
-
-          <div className="space-y-2">
-            <h2 className="text-3xl font-black text-body-dark">
-              Spelling Session Complete!
-            </h2>
-            <p className="text-base text-muted-label">
-              Detailed transcription breakdown for {selectedGroup?.title}.
-            </p>
-          </div>
-
-          {/* Numbers Grid */}
-          <div className="grid grid-cols-2 gap-4 pt-2">
-            <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200">
-              <div className="text-4xl font-black text-emerald-700">
-                {sessionCorrect.length}
-              </div>
-              <div className="text-xs font-bold uppercase tracking-wider text-emerald-800 mt-1">
-                Correctly Spelled
-              </div>
-            </div>
-
-            <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200">
-              <div className="text-4xl font-black text-rose-700">
-                {sessionMisspelled.length}
-              </div>
-              <div className="text-xs font-bold uppercase tracking-wider text-rose-800 mt-1">
-                Misspelled
-              </div>
-            </div>
-          </div>
-
-          <section className="rounded-2xl border border-plum/15 bg-stone-50 p-5 text-left">
-            <h3 className="text-base font-black text-body-dark">Corpus Mastery</h3>
-            <p className="mt-1 text-sm text-muted-label">
-              Saved in this browser; the latest result determines each word&apos;s category.
-            </p>
-            <div className="mt-4 grid grid-cols-3 gap-2 text-center">
-              <div className="rounded-xl bg-emerald-50 p-3">
-                <div className="text-2xl font-black text-emerald-700">
-                  {corpusMastery.know}
-                </div>
-                <div className="text-xs font-bold text-emerald-800">Know</div>
-              </div>
-              <div className="rounded-xl bg-rose-50 p-3">
-                <div className="text-2xl font-black text-rose-700">
-                  {corpusMastery.doNotKnow}
-                </div>
-                <div className="text-xs font-bold text-rose-800">Do Not Know</div>
-              </div>
-              <div className="rounded-xl bg-amber-50 p-3">
-                <div className="text-2xl font-black text-amber-700">
-                  {corpusMastery.forgot}
-                </div>
-                <div className="text-xs font-bold text-amber-800">Forgot</div>
-              </div>
-            </div>
-          </section>
-
-          {/* Action Options */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4 border-t border-plum/15">
-            {topicMistakes.length > 0 && (
-              <button
-                type="button"
-                onClick={() => {
-                  const mistakeWords = topicMistakes.map((entry) => entry.word);
-                  setMistakesList(mistakeWords);
-                  setMistakesOnly(true);
-                  setCurrentIndex(0);
-                  setSpellingInput("");
-                  setStatusFeedback(null);
-                  setHasAnsweredCurrent(false);
-                  setSessionCorrect([]);
-                  setSessionMisspelled([]);
-                  setViewMode("drill");
-                }}
-                className="imlaa-btn-primary w-full sm:w-auto py-3 px-6 text-base font-bold bg-rose-600 hover:bg-rose-700 text-white"
-              >
-                Practice Mistakes ({topicMistakes.length})
-              </button>
-            )}
-
-            <button
-              type="button"
-              onClick={() => {
-                setMistakesOnly(false);
-                setCurrentIndex(0);
-                setSpellingInput("");
-                setStatusFeedback(null);
-                setHasAnsweredCurrent(false);
-                setSessionCorrect([]);
-                setSessionMisspelled([]);
-                setViewMode("drill");
-              }}
-              className="imlaa-btn-secondary w-full sm:w-auto py-3 px-6 text-base font-semibold"
-            >
-              Start Over
-            </button>
-
-            <button
-              type="button"
-              onClick={handleReturnToSets}
-              className="imlaa-btn-secondary w-full sm:w-auto py-3 px-6 text-base font-semibold"
-            >
-              Corpus Sets
-            </button>
-          </div>
-        </div>
+        <SpellingSessionSummary
+          selectedGroup={selectedGroup}
+          sessionCorrect={sessionCorrect}
+          sessionMisspelled={sessionMisspelled}
+          corpusMastery={corpusMastery}
+          mistakeCount={topicMistakes.length}
+          onPracticeMistakes={handlePracticeTopicMistakes}
+          onStartOver={handleStartOver}
+          onReturnToSets={handleReturnToSets}
+        />
       )}
 
-      {/* ==================================================== */}
-      {/* 5. RANDOM SPELLING QUIZ (Item 5)                     */}
-      {/* ==================================================== */}
       {viewMode === "quiz" && (
-        <div className="w-full max-w-2xl mx-auto flex flex-col space-y-6">
-          <div className="flex items-center justify-between px-1">
-            <button
-              type="button"
-              onClick={() => {
-                stopQuizTimer();
-                setViewMode("sets");
-              }}
-              className="inline-flex items-center space-x-2 text-plum hover:text-plum-hover font-semibold cursor-pointer"
-            >
-              <HiArrowLeft className="w-5 h-5" />
-              <span>Exit Quiz</span>
-            </button>
-
-            {quizTimerMinutes > 0 && (
-              <div className="flex items-center space-x-2 bg-plum/10 text-plum font-mono font-bold px-3 py-1 rounded-xl">
-                <HiClock className="w-5 h-5" />
-                <span>{formatTimer(quizTimeRemaining)}</span>
-              </div>
-            )}
-          </div>
-
-          {!quizFinished && quizQuestions.length > 0 ? (
-            <div className="imlaa-card p-8 bg-white border border-plum/20 shadow-md space-y-6 text-center">
-              <div className="flex items-center justify-between text-sm text-muted-label font-semibold">
-                <span>
-                  Question {quizIndex + 1} of {quizQuestions.length}
-                </span>
-                <span>Score: {quizScore}</span>
-              </div>
-
-              <div className="py-4 space-y-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    const activeQ = quizQuestions[quizIndex];
-                    if (activeQ) {
-                      speakWithMicrosoftTTS(activeQ.word, {
-                        vocabId: activeQ.id,
-                        audioUrl: activeQ.audioUrl || activeQ.audio_url,
-                      });
-                    }
-                  }}
-                  className="w-20 h-20 rounded-2xl bg-plum hover:bg-plum-hover text-white mx-auto flex items-center justify-center transition shadow-md cursor-pointer"
-                >
-                  <HiSpeakerWave className="w-10 h-10" />
-                </button>
-                <div className="text-sm text-muted-label font-medium">
-                  Listen to the pronunciation and spell it below:
-                </div>
-              </div>
-
-              <form onSubmit={handleQuizSubmit} className="max-w-md mx-auto space-y-4">
-                <input
-                  type="text"
-                  autoFocus
-                  value={quizInput}
-                  onChange={(e) => setQuizInput(e.target.value)}
-                  placeholder="Type your spelling..."
-                  className="imlaa-input text-xl text-center py-3.5 px-6"
-                />
-                <button
-                  type="submit"
-                  disabled={!quizInput.trim() || quizSubmitting}
-                  className="imlaa-btn-primary w-full py-3.5 text-base font-bold"
-                >
-                  {quizSubmitting ? "Saving..." : "Submit & Next"}
-                </button>
-              </form>
-
-              {quizMisspelled.length > 0 && (
-                <section className="rounded-2xl border border-rose-200 bg-rose-50/50 p-5 text-left">
-                  <h3 className="font-bold text-rose-800">
-                    Mistakes so far ({quizMisspelled.length})
-                  </h3>
-                  <ul className="mt-3 flex flex-wrap gap-2">
-                    {quizMisspelled.map((word) => (
-                      <li
-                        key={word.id || word.word}
-                        className="rounded-lg border border-rose-200 bg-white px-3 py-2 text-sm text-body-dark"
-                      >
-                        Correct spelling: <strong>{word.word}</strong>
-                        <span className="ml-1 text-muted-label">
-                          · {meaningLanguageLabel}:{" "}
-                          {getVocabularyMeaning(word, preferredMeaningLanguage) ||
-                            `No ${meaningLanguageLabel} meaning saved`}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                </section>
-              )}
-            </div>
-          ) : (
-            <div className="imlaa-card p-8 bg-white border border-plum/20 shadow-md text-center space-y-6">
-              <h2 className="text-3xl font-black text-body-dark">Spelling Quiz Completed!</h2>
-              <div className="text-5xl font-black text-plum">
-                {quizScore} / {quizQuestions.length}
-              </div>
-              <p className="text-base text-muted-label">
-                Accuracy: {Math.round((quizScore / (quizQuestions.length || 1)) * 100)}%
-              </p>
-
-              <section className="rounded-2xl border border-plum/15 bg-stone-50 p-5 text-left">
-                <h3 className="text-base font-black text-body-dark">Corpus Mastery</h3>
-                <div className="mt-3 grid grid-cols-3 gap-2 text-center">
-                  <div className="rounded-xl bg-emerald-50 p-3">
-                    <div className="text-2xl font-black text-emerald-700">
-                      {quizMastery.know}
-                    </div>
-                    <div className="text-xs font-bold text-emerald-800">Know</div>
-                  </div>
-                  <div className="rounded-xl bg-rose-50 p-3">
-                    <div className="text-2xl font-black text-rose-700">
-                      {quizMastery.doNotKnow}
-                    </div>
-                    <div className="text-xs font-bold text-rose-800">Do Not Know</div>
-                  </div>
-                  <div className="rounded-xl bg-amber-50 p-3">
-                    <div className="text-2xl font-black text-amber-700">
-                      {quizMastery.forgot}
-                    </div>
-                    <div className="text-xs font-bold text-amber-800">Forgot</div>
-                  </div>
-                </div>
-              </section>
-
-              {quizMisspelled.length > 0 && (
-                <section className="rounded-2xl border border-rose-200 bg-rose-50/50 p-5 text-left">
-                  <h3 className="font-bold text-rose-800">
-                    Mistakes in this quiz ({quizMisspelled.length})
-                  </h3>
-                  <ul className="mt-3 flex flex-wrap gap-2">
-                    {quizMisspelled.map((word) => (
-                      <li
-                        key={word.id || word.word}
-                        className="rounded-lg border border-rose-200 bg-white px-3 py-2 text-sm text-body-dark"
-                      >
-                        Correct spelling: <strong>{word.word}</strong>
-                        <span className="ml-1 text-muted-label">
-                          · {meaningLanguageLabel}:{" "}
-                          {getVocabularyMeaning(word, preferredMeaningLanguage) ||
-                            `No ${meaningLanguageLabel} meaning saved`}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                </section>
-              )}
-
-              <div className="flex items-center justify-center gap-3 pt-4 border-t border-plum/10">
-                <button
-                  type="button"
-                  onClick={launchQuizSession}
-                  className="imlaa-btn-primary py-3 px-6 text-base font-bold"
-                >
-                  Try Again
-                </button>
-                {quizTopic && getSpellingMistakes(visibleMastery, quizTopic).length > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => handleStartDrill(selectedGroup, true)}
-                    className="imlaa-btn-secondary py-3 px-6 text-base text-rose-700"
-                  >
-                    Practice Mistakes ({getSpellingMistakes(visibleMastery, quizTopic).length})
-                  </button>
-                )}
-                <button
-                  type="button"
-                  onClick={() => setViewMode("sets")}
-                  className="imlaa-btn-secondary py-3 px-6 text-base"
-                >
-                  Return to Sets
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
+        <SpellingQuizView
+          questions={quizQuestions}
+          index={quizIndex}
+          score={quizScore}
+          timerMinutes={quizTimerMinutes}
+          timeRemaining={quizTimeRemaining}
+          finished={quizFinished}
+          input={quizInput}
+          misspelled={quizMisspelled}
+          submitting={quizSubmitting}
+          meaningLanguageCode={preferredMeaningLanguage}
+          meaningLanguageLabel={meaningLanguageLabel}
+          quizMastery={quizMastery}
+          mistakeCount={quizMistakeCount}
+          onExit={handleExitQuiz}
+          onInputChange={setQuizInput}
+          onSubmit={handleQuizSubmit}
+          onSpeak={speakQuizWord}
+          onRetry={launchQuizSession}
+          onPracticeMistakes={() => handleStartDrill(selectedGroup, true)}
+          onReturn={() => setViewMode("sets")}
+        />
       )}
 
       {quizModalOpen && (
