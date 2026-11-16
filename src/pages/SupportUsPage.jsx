@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { useSearchParams, useNavigate } from "react-router";
 import { HiArrowLeft, HiHandRaised, HiHeart } from "react-icons/hi2";
 import MinimalFooter from "../components/MinimalFooter";
@@ -38,6 +39,15 @@ export default function SupportUsPage() {
     : hashTab || "donate";
   const activeConfig =
     SUPPORT_TABS.find(({ id }) => id === activeTab) || SUPPORT_TABS[0];
+  const previousTab = useRef(activeTab);
+
+  useEffect(() => {
+    if (previousTab.current === activeTab) return;
+    previousTab.current = activeTab;
+    document
+      .getElementById(`support-panel-${activeTab}`)
+      ?.scrollIntoView({ block: "start" });
+  }, [activeTab]);
 
   const selectTab = (tab) => {
     const next = new URLSearchParams(searchParams);
@@ -177,7 +187,9 @@ export default function SupportUsPage() {
               aria-labelledby={`support-tab-${id}`}
               tabIndex={0}
               hidden={activeTab !== id}
-              className="focus-visible:outline-none"
+              className={`scroll-mt-24 focus-visible:outline-none ${
+                activeTab === id ? "animate-support-panel-enter" : ""
+              }`}
             >
               {id === "donate" ? (
                 <DonateSection onVolunteer={() => selectTab("volunteer")} />
