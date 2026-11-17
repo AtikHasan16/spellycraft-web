@@ -302,6 +302,12 @@ export default function LandingPage() {
         </Link>
         <nav aria-label="Main navigation" className="flex items-center gap-2 sm:gap-5">
           <Link
+            to="/support-us"
+            className="min-h-11 inline-flex items-center px-2 text-sm font-semibold text-muted-label hover:text-plum"
+          >
+            Support Us
+          </Link>
+          <Link
             to="/resources"
             className="min-h-11 inline-flex items-center px-2 text-sm font-semibold text-muted-label hover:text-plum"
           >

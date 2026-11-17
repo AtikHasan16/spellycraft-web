@@ -1,5 +1,12 @@
-import { lazy, Suspense } from "react";
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router";
+import { lazy, Suspense, useEffect, useRef } from "react";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate,
+  useLocation,
+  useNavigationType,
+} from "react-router";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import ErrorBoundary from "./components/ErrorBoundary";
 import CapacityGuardModal from "./components/CapacityGuardModal";
@@ -36,6 +43,23 @@ const DeveloperApplicationPage = lazy(() =>
     default: module.DeveloperApplicationPage,
   })),
 );
+
+function ScrollToTop() {
+  const { pathname, hash } = useLocation();
+  const navigationType = useNavigationType();
+  const previousPathname = useRef(pathname);
+
+  useEffect(() => {
+    const pathnameChanged = previousPathname.current !== pathname;
+    previousPathname.current = pathname;
+
+    if (pathnameChanged && !hash && navigationType !== "POP") {
+      window.scrollTo(0, 0);
+    }
+  }, [pathname, hash, navigationType]);
+
+  return null;
+}
 
 function PageRoute({ component: Page }) {
   return (
@@ -85,6 +109,7 @@ export default function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
+        <ScrollToTop />
         <SeoManager />
         <CapacityGuardModal />
         <Routes>

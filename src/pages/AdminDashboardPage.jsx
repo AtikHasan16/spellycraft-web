@@ -9,6 +9,9 @@ import UserInspector from "../features/admin/UserInspector";
 import UserDirectory from "../features/admin/UserDirectory";
 import AiUsageTab from "../features/admin/AiUsageTab";
 import CommunityModerationTab from "../features/admin/CommunityModerationTab";
+import VolunteerRequestsTab from "../components/admin/VolunteerRequestsTab";
+import NotificationBell from "../components/admin/NotificationBell";
+import { countNewVolunteerApplications } from "../services/volunteerService";
 import { useModalEffects } from "../hooks/useModalEffects";
 import {
   HiUsers,
@@ -31,6 +34,17 @@ export default function AdminDashboardPage() {
   const [auditUsers, setAuditUsers] = useState([]);
   const [auditLogs, setAuditLogs] = useState([]);
   const [loadingAudit, setLoadingAudit] = useState(true);
+  const [newVolunteerCount, setNewVolunteerCount] = useState(0);
+
+  const refreshVolunteerCount = useCallback(async () => {
+    try {
+      setNewVolunteerCount(await countNewVolunteerApplications());
+    } catch {
+      // The volunteer table may not be provisioned yet; the tab and bell show
+      // their own setup guidance in that case.
+      setNewVolunteerCount(0);
+    }
+  }, []);
 
   const [selectedUser, setSelectedUser] = useState(null);
   const [selectedUserMetrics, setSelectedUserMetrics] = useState(null);
@@ -92,6 +106,7 @@ export default function AdminDashboardPage() {
 
   const fetchAuditData = useCallback(async () => {
     setLoadingAudit(true);
+    refreshVolunteerCount();
     try {
       const [usersRes, logsRes] = await Promise.all([
         apiClient.get("/admin/users-audit"),
@@ -115,7 +130,7 @@ export default function AdminDashboardPage() {
     } finally {
       setLoadingAudit(false);
     }
-  }, []);
+  }, [refreshVolunteerCount]);
 
   useEffect(() => {
     fetchAuditData();
@@ -266,6 +281,8 @@ export default function AdminDashboardPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2 sm:space-x-3 self-start sm:self-auto">
+          <NotificationBell onNavigate={setActiveTab} />
+
           <button
             type="button"
             onClick={fetchAuditData}
@@ -297,19 +314,31 @@ export default function AdminDashboardPage() {
           ["overview", "Overview"],
           ["ai-usage", "AI Usage"],
           ["community", "Community"],
+          ["volunteer", "Volunteer Requests"],
         ].map(([tab, label]) => (
           <button
             key={tab}
             type="button"
             aria-current={activeTab === tab ? "page" : undefined}
             onClick={() => setActiveTab(tab)}
-            className={`min-h-11 rounded-xl px-4 text-sm font-semibold ${
+            className={`inline-flex min-h-11 items-center justify-center rounded-xl px-4 text-sm font-semibold ${
               activeTab === tab
                 ? "bg-plum text-white"
                 : "border border-plum/20 bg-white text-plum hover:bg-plum/5"
             }`}
           >
             {label}
+            {tab === "volunteer" && newVolunteerCount > 0 && (
+              <span
+                className={`ml-2 inline-flex min-w-5 items-center justify-center rounded-full px-1.5 py-0.5 text-[10px] font-black ${
+                  activeTab === tab
+                    ? "bg-white text-plum"
+                    : "bg-rose-500 text-white"
+                }`}
+              >
+                {newVolunteerCount > 99 ? "99+" : newVolunteerCount}
+              </span>
+            )}
           </button>
         ))}
       </nav>
@@ -318,6 +347,8 @@ export default function AdminDashboardPage() {
         <AiUsageTab />
       ) : activeTab === "community" ? (
         <CommunityModerationTab />
+      ) : activeTab === "volunteer" ? (
+        <VolunteerRequestsTab onApplicationsChanged={refreshVolunteerCount} />
       ) : (
         <>
           {/* ==================================================== */}

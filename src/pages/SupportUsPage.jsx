@@ -1,243 +1,207 @@
-import { useState } from "react";
-import { useNavigate } from "react-router";
-import {
-  HiHeart,
-  HiClipboardDocument,
-  HiCheck,
-  HiArrowLeft,
-  HiSparkles,
-} from "react-icons/hi2";
-import { SiBuymeacoffee, SiPaypal } from "react-icons/si";
-import { showSuccessToast } from "../utils/sweetalert";
+import { useEffect, useRef } from "react";
+import { useSearchParams, useNavigate } from "react-router";
+import { HiArrowLeft, HiHandRaised, HiHeart } from "react-icons/hi2";
 import MinimalFooter from "../components/MinimalFooter";
+import DonateSection from "../components/support/DonateSection";
+import WorkWithUsSection from "../components/support/WorkWithUsSection";
 import { Helmet } from "react-helmet-async";
+
+const SUPPORT_TABS = [
+  {
+    id: "donate",
+    label: "Donate",
+    icon: HiHeart,
+    tagline:
+      "Your contributions directly support cloud servers and Neural TTS voice synthesis for English learners.",
+  },
+  {
+    id: "volunteer",
+    label: "Work with Us",
+    icon: HiHandRaised,
+    tagline:
+      "Lend your development or English-teaching skills and help shape the next version of SpellyCraft.",
+  },
+];
+
+const SUPPORT_TAB_IDS = new Set(SUPPORT_TABS.map(({ id }) => id));
 
 export default function SupportUsPage() {
   const navigate = useNavigate();
-  const [copiedId, setCopiedId] = useState(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const requestedTab = searchParams.get("tab");
+  // Deep links such as /support-us#volunteer should still open the volunteer tab.
+  const hashTab =
+    typeof window !== "undefined" && window.location.hash === "#volunteer"
+      ? "volunteer"
+      : null;
+  const activeTab = SUPPORT_TAB_IDS.has(requestedTab)
+    ? requestedTab
+    : hashTab || "donate";
+  const activeConfig =
+    SUPPORT_TABS.find(({ id }) => id === activeTab) || SUPPORT_TABS[0];
+  const previousTab = useRef(activeTab);
 
-  const bdMethods = [
-    {
-      id: "bkash",
-      name: "bKash",
-      number: "0000000000",
-      type: "Send Money",
-      note: "Use 'SpellyCraft' in reference",
-      tagColor: "bg-pink-50 text-pink-700 border-pink-200",
-    },
-    {
-      id: "nagad",
-      name: "Nagad",
-      number: "0000000000",
-      type: "Send Money",
-      note: "Use 'SpellyCraft' in reference",
-      tagColor: "bg-amber-50 text-amber-700 border-amber-200",
-    },
-    {
-      id: "rocket",
-      name: "Rocket",
-      number: "0000000000-0",
-      type: "Send Money",
-      note: "Use *322# or app",
-      tagColor: "bg-purple-50 text-purple-700 border-purple-200",
-    },
-  ];
+  useEffect(() => {
+    if (previousTab.current === activeTab) return;
+    previousTab.current = activeTab;
+    document
+      .getElementById(`support-panel-${activeTab}`)
+      ?.scrollIntoView({ block: "start" });
+  }, [activeTab]);
 
-  const handleCopy = async (id, text) => {
-    try {
-      if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(text);
-      } else {
-        const ta = document.createElement("textarea");
-        ta.value = text;
-        document.body.appendChild(ta);
-        ta.select();
-        document.execCommand("copy");
-        document.body.removeChild(ta);
-      }
-      setCopiedId(id);
-      showSuccessToast("Copied!", `${text} copied to clipboard.`);
-      setTimeout(() => setCopiedId(null), 2500);
-    } catch {
-      // Fallback
+  const selectTab = (tab) => {
+    const next = new URLSearchParams(searchParams);
+    next.set("tab", tab);
+    setSearchParams(next, { replace: true });
+  };
+
+  const handleTabKeyDown = (event, currentIndex) => {
+    let nextIndex;
+    if (event.key === "ArrowRight") {
+      nextIndex = (currentIndex + 1) % SUPPORT_TABS.length;
+    } else if (event.key === "ArrowLeft") {
+      nextIndex = (currentIndex - 1 + SUPPORT_TABS.length) % SUPPORT_TABS.length;
+    } else if (event.key === "Home") {
+      nextIndex = 0;
+    } else if (event.key === "End") {
+      nextIndex = SUPPORT_TABS.length - 1;
+    } else {
+      return;
     }
+
+    event.preventDefault();
+    const nextTab = SUPPORT_TABS[nextIndex];
+    selectTab(nextTab.id);
+    document.getElementById(`support-tab-${nextTab.id}`)?.focus();
   };
 
   return (
-      <>
-        <Helmet>
-          <title>Support SpellyCraft | Help Us Build Better IELTS Learning Tools</title>
-          <meta name="description" content="Support SpellyCraft's mission to provide free, high-quality IELTS vocabulary and spelling mastery tools. Your contributions help maintain phonemic speech synthesis, lexical mastery workspace, and academic IELTS candidate resources." />
-          <meta name="keywords" content="Support SpellyCraft, donate IELTS learning platform, academic IELTS candidates, lexical mastery workspace, phonemic speech synthesis, vocabulary building tools" />
-          <meta property="og:title" content="Support SpellyCraft | Help Us Build Better IELTS Learning Tools" />
-          <meta property="og:description" content="Support SpellyCraft's mission to provide free, high-quality IELTS vocabulary and spelling mastery tools." />
-          <meta property="og:type" content="website" />
-          <meta property="og:url" content="https://www.spellycraft.com/support-us" />
-          <meta property="og:image" content="https://www.spellycraft.com/logo192.png" />
-          <meta name="twitter:card" content="summary_large_image" />
-          <meta name="twitter:title" content="Support SpellyCraft | Help Us Build Better IELTS Learning Tools" />
-          <meta name="twitter:description" content="Support SpellyCraft's mission to provide free, high-quality IELTS vocabulary and spelling mastery tools." />
-          <meta name="twitter:image" content="https://www.spellycraft.com/logo192.png" />
-        </Helmet>
-        <div className="min-h-screen bg-white text-body-dark flex flex-col justify-between overflow-x-hidden">
-          {/* Top Header */}
-      <header className="border-b border-plum/15 px-4 sm:px-6 py-3.5 sm:py-4 bg-white/80 backdrop-blur-md sticky top-0 z-40">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <button
-            type="button"
-            onClick={() => navigate(-1)}
-            className="inline-flex items-center space-x-2 text-plum hover:text-plum-hover font-semibold transition cursor-pointer min-h-11 px-1"
-          >
-            <HiArrowLeft className="w-5 h-5 shrink-0" />
-            <span>Go Back</span>
-          </button>
-          <div className="flex items-center space-x-2 text-plum font-black tracking-tight text-xl">
-            <span>SpellyCraft</span>
-            <span className="w-2 h-2 rounded-full bg-plum inline-block"></span>
-          </div>
-        </div>
-      </header>
+    <>
+      <Helmet>
+        <title>Support SpellyCraft | Donate or Volunteer</title>
+        <meta
+          name="description"
+          content="Support SpellyCraft's mission to provide free, high-quality IELTS vocabulary and spelling mastery tools. Donate, or volunteer in software development or English linguistics."
+        />
+        <meta
+          name="keywords"
+          content="Support SpellyCraft, donate IELTS learning platform, volunteer developer, English linguistics volunteer, academic IELTS candidates, lexical mastery workspace, phonemic speech synthesis, vocabulary building tools"
+        />
+        <meta property="og:title" content="Support SpellyCraft | Donate or Volunteer" />
+        <meta
+          property="og:description"
+          content="Support SpellyCraft's mission to provide free, high-quality IELTS vocabulary and spelling mastery tools."
+        />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://www.spellycraft.com/support-us" />
+        <meta property="og:image" content="https://www.spellycraft.com/logo192.png" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta
+          name="twitter:title"
+          content="Support SpellyCraft | Donate or Volunteer"
+        />
+        <meta
+          name="twitter:description"
+          content="Support SpellyCraft's mission to provide free, high-quality IELTS vocabulary and spelling mastery tools."
+        />
+        <meta name="twitter:image" content="https://www.spellycraft.com/logo192.png" />
+      </Helmet>
 
-      {/* Main Content (Simple, clean, minimal text) */}
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-12 flex-1 w-full space-y-8 sm:space-y-10 animate-slide-up">
-        {/* Simple Title */}
-        <div className="text-center max-w-xl mx-auto space-y-2 sm:space-y-3">
-          <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-plum/10 text-plum font-bold text-xs tracking-wide">
-            <HiHeart className="w-3.5 h-3.5 text-plum" />
-            <span>Support The Platform</span>
-          </div>
-          <h1 className="text-2xl sm:text-4xl font-black text-body-dark tracking-tight wrap-break-word">
-            Help Keep SpellyCraft Free
-          </h1>
-          <p className="text-sm sm:text-base text-muted-label">
-            Your contributions directly support cloud servers and Neural TTS voice
-            synthesis for English learners.
-          </p>
-        </div>
-
-        {/* 2 Simple Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 items-start">
-          {/* 1. International */}
-          <div className="imlaa-card p-4 sm:p-6 border border-plum/20 bg-white space-y-4 sm:space-y-5">
-            <div className="flex items-center space-x-2 pb-2 border-b border-plum/10">
-              <HiSparkles className="w-4 h-4 text-plum" />
-              <h2 className="text-base sm:text-lg font-bold text-body-dark">
-                International
-              </h2>
-            </div>
-
-            <div className="space-y-3">
-              <a
-                href="https://buymeacoffee.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-between p-3.5 sm:p-4 rounded-xl border border-amber-300 bg-amber-50/80 hover:bg-amber-100 transition group cursor-pointer min-h-11"
-              >
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 rounded-lg bg-amber-400 text-stone-900 flex items-center justify-center font-bold shrink-0">
-                    <SiBuymeacoffee className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <div className="font-bold text-sm text-stone-900">
-                      Buy Me a Coffee
-                    </div>
-                    <div className="text-xs text-stone-600">
-                      Card, Apple Pay, Google Pay
-                    </div>
-                  </div>
-                </div>
-                <span className="text-xs font-bold text-amber-800 group-hover:translate-x-0.5 transition shrink-0 ml-2">
-                  Contribute &rarr;
-                </span>
-              </a>
-
-              <a
-                href="https://paypal.me"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-between p-3.5 sm:p-4 rounded-xl border border-sky-200 bg-sky-50/80 hover:bg-sky-100 transition group cursor-pointer min-h-11"
-              >
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 rounded-lg bg-sky-600 text-white flex items-center justify-center font-bold shrink-0">
-                    <SiPaypal className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <div className="font-bold text-sm text-stone-900">PayPal</div>
-                    <div className="text-xs text-stone-600">
-                      Direct wallet / card payment
-                    </div>
-                  </div>
-                </div>
-                <span className="text-xs font-bold text-sky-800 group-hover:translate-x-0.5 transition shrink-0 ml-2">
-                  Contribute &rarr;
-                </span>
-              </a>
+      <div className="flex min-h-screen flex-col justify-between overflow-x-hidden bg-white text-body-dark">
+        {/* Top Header */}
+        <header className="sticky top-0 z-40 border-b border-plum/15 bg-white/80 px-4 py-3.5 backdrop-blur-md sm:px-6 sm:py-4">
+          <div className="mx-auto flex max-w-6xl items-center justify-between">
+            <button
+              type="button"
+              onClick={() => navigate(-1)}
+              className="inline-flex min-h-11 items-center gap-2 px-1 font-semibold text-plum transition hover:text-plum-hover"
+            >
+              <HiArrowLeft className="h-5 w-5 shrink-0" aria-hidden="true" />
+              <span>Go Back</span>
+            </button>
+            <div className="flex items-center gap-2 text-xl font-black tracking-tight text-plum">
+              <span>SpellyCraft</span>
+              <span className="inline-block h-2 w-2 rounded-full bg-plum" aria-hidden="true" />
             </div>
           </div>
+        </header>
 
-          {/* 2. Bangladesh (bKash / Nagad / Rocket) */}
-          <div className="imlaa-card p-4 sm:p-6 border border-plum/20 bg-white space-y-4 sm:space-y-5">
-            <div className="flex items-center space-x-2 pb-2 border-b border-plum/10">
-              <span className="text-sm">🇧🇩</span>
-              <h2 className="text-base sm:text-lg font-bold text-body-dark">
-                Mobile Banking (Bangladesh)
-              </h2>
-            </div>
+        <main className="mx-auto w-full max-w-6xl flex-1 animate-slide-up space-y-6 px-4 py-8 sm:space-y-8 sm:px-6 sm:py-12">
+          {/* Hero */}
+          <div className="mx-auto max-w-2xl space-y-3 text-center">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-plum/10 px-3 py-1 text-xs font-bold tracking-wide text-plum">
+              <HiHeart className="h-3.5 w-3.5" aria-hidden="true" />
+              Support The Platform
+            </span>
+            <h1 className="text-2xl font-black tracking-tight text-body-dark wrap-break-word sm:text-4xl">
+              Support SpellyCraft
+            </h1>
+            <p
+              key={activeConfig.id}
+              className="text-sm leading-relaxed text-muted-label sm:text-base"
+            >
+              {activeConfig.tagline}
+            </p>
+          </div>
 
-            <div className="space-y-2.5">
-              {bdMethods.map((m) => (
-                <div
-                  key={m.id}
-                  className="p-3 sm:p-3.5 rounded-xl border border-plum/15 bg-plum/5 flex flex-wrap sm:flex-nowrap items-center justify-between gap-2"
-                >
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center space-x-2">
-                      <span className="font-bold text-sm text-body-dark">{m.name}</span>
-                      <span
-                        className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${m.tagColor}`}
-                      >
-                        {m.type}
-                      </span>
-                    </div>
-                    <div className="text-sm sm:text-base font-mono font-bold text-plum mt-0.5 tracking-wide truncate">
-                      {m.number}
-                    </div>
-                    <div className="text-[11px] text-muted-label truncate">{m.note}</div>
-                  </div>
-
+          {/* Tab switcher */}
+          <div className="mx-auto w-full max-w-md">
+            <div
+              role="tablist"
+              aria-label="Support SpellyCraft"
+              className="flex gap-1 rounded-2xl border border-plum/15 bg-plum/5 p-1.5"
+            >
+              {SUPPORT_TABS.map(({ id, label, icon: Icon }, index) => {
+                const selected = activeTab === id;
+                return (
                   <button
+                    key={id}
+                    id={`support-tab-${id}`}
                     type="button"
-                    onClick={() => handleCopy(m.id, m.number)}
-                    className="px-3 py-1.5 rounded-lg bg-white border border-plum/25 hover:bg-plum/10 text-xs font-semibold text-plum flex items-center space-x-1 shadow-xs transition active:scale-95 cursor-pointer min-h-11 shrink-0"
+                    role="tab"
+                    aria-selected={selected}
+                    aria-controls={`support-panel-${id}`}
+                    tabIndex={selected ? 0 : -1}
+                    onClick={() => selectTab(id)}
+                    onKeyDown={(event) => handleTabKeyDown(event, index)}
+                    className={`inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl px-3 text-sm font-bold transition sm:text-base ${
+                      selected
+                        ? "bg-white text-plum shadow-sm ring-1 ring-plum/10"
+                        : "text-muted-label hover:bg-white/60 hover:text-body-dark"
+                    }`}
                   >
-                    {copiedId === m.id ? (
-                      <>
-                        <HiCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                        <span className="text-emerald-700">Copied</span>
-                      </>
-                    ) : (
-                      <>
-                        <HiClipboardDocument className="w-3.5 h-3.5 shrink-0" />
-                        <span>Copy</span>
-                      </>
-                    )}
+                    <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+                    {label}
                   </button>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
-        </div>
 
-        {/* Small note */}
-        <p className="text-xs text-muted-label text-center px-2">
-          Any amount helps maintain database servers and voice generation for students in
-          need.
-        </p>
-      </main>
+          {/* Panels — both stay mounted so a half-filled application survives a tab switch */}
+          {SUPPORT_TABS.map(({ id }) => (
+            <div
+              key={id}
+              id={`support-panel-${id}`}
+              role="tabpanel"
+              aria-labelledby={`support-tab-${id}`}
+              tabIndex={0}
+              hidden={activeTab !== id}
+              className={`scroll-mt-24 focus-visible:outline-none ${
+                activeTab === id ? "animate-support-panel-enter" : ""
+              }`}
+            >
+              {id === "donate" ? (
+                <DonateSection onVolunteer={() => selectTab("volunteer")} />
+              ) : (
+                <WorkWithUsSection onDonate={() => selectTab("donate")} />
+              )}
+            </div>
+          ))}
+        </main>
 
-      {/* Simple Footer */}
-      <MinimalFooter />
-    </div>
-          </>
-        );
-      }
+        <MinimalFooter />
+      </div>
+    </>
+  );
+}
