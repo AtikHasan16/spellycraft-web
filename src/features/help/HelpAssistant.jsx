@@ -108,7 +108,7 @@ function ChatMessage({ message }) {
   return (
     <div className={`flex ${isAssistant ? "justify-start" : "justify-end"}`}>
       <div
-        className={`min-w-0 max-w-[88%] rounded-2xl px-4 py-3 text-sm leading-6 [overflow-wrap:anywhere] ${
+        className={`min-w-0 max-w-[88%] rounded-2xl px-4 py-3 text-sm leading-6 wrap-anywhere ${
           isAssistant
             ? "rounded-bl-md border border-plum-border/60 bg-white text-body-dark"
             : "rounded-br-md bg-plum text-white"
@@ -268,7 +268,7 @@ function HelpChat({ fullPage = false, onClose }) {
       <div className="flex shrink-0 items-center justify-between gap-3 border-b border-plum-border/40 bg-plum-light px-4 py-2 text-xs text-plum">
         <div className="flex min-w-0 items-center gap-2" role="status">
           <span className="h-2 w-2 shrink-0 rounded-full bg-emerald-600" aria-hidden="true" />
-          <span className="[overflow-wrap:anywhere]">
+          <span className="wrap-anywhere">
             Vocabulary, grammar, and platform help only.
           </span>
         </div>
@@ -290,7 +290,7 @@ function HelpChat({ fullPage = false, onClose }) {
         aria-relevant="additions text"
       >
         <div className="flex justify-start">
-          <div className="min-w-0 max-w-[88%] rounded-2xl rounded-bl-md border border-plum-border/60 bg-white px-4 py-3 text-sm leading-6 text-body-dark [overflow-wrap:anywhere]">
+          <div className="min-w-0 max-w-[88%] rounded-2xl rounded-bl-md border border-plum-border/60 bg-white px-4 py-3 text-sm leading-6 text-body-dark wrap-anywhere">
             <p>Hi, what are you working on?</p>
             <p className="mt-1 text-muted-label">
               I can help with English vocabulary, grammar, or finding your way around
@@ -329,7 +329,7 @@ function HelpChat({ fullPage = false, onClose }) {
         )}
         {failedRequest && (
           <div className="flex items-center justify-between gap-3 text-xs text-rose-700" role="alert">
-            <span className="[overflow-wrap:anywhere]">{failedRequest.error}</span>
+            <span className="wrap-anywhere">{failedRequest.error}</span>
             <button
               type="button"
               onClick={() => sendMessage(failedRequest.text, true)}

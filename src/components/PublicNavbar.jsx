@@ -53,7 +53,7 @@ export default function PublicNavbar() {
 
   return (
     <>
-    <header className={`fixed left-1/2 top-3 z-40 w-full max-w-6xl -translate-x-1/2 px-4 transition-transform duration-300 sm:px-6 ${visible ? "translate-y-0" : "-translate-y-[150%]"}`}>
+    <header className={`fixed left-1/2 top-3 z-40 w-full max-w-6xl -translate-x-1/2 px-4 transition-transform duration-300 sm:px-6 ${visible ? "translate-y-0" : "translate-y-[-150%]"}`}>
       <div className="rounded-2xl border border-plum/15 bg-white/95 shadow-md backdrop-blur-md">
         <div className="flex min-h-18 items-center justify-between gap-4 px-4 sm:px-6">
           <Link to="/" aria-label="SpellyCraft home" className="inline-flex min-h-11 shrink-0 items-center gap-2.5 rounded-lg text-body-dark">
