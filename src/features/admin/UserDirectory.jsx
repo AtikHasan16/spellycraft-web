@@ -19,6 +19,7 @@ export default function UserDirectory({
   adminCount,
   onOpenUser,
   onUpdateRole,
+  canManageRoles = false,
 }) {
   const [roleFilter, setRoleFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -251,14 +252,14 @@ export default function UserDirectory({
               <th className="py-3 px-3">Email & Auth</th>
               <th className="py-3 px-3">Assigned Role</th>
               <th className="py-3 px-3">Presence</th>
-              <th className="py-3 px-3 text-right">Modify Role</th>
+              {canManageRoles && <th className="py-3 px-3 text-right">Modify Role</th>}
             </tr>
           </thead>
           <tbody className="divide-y divide-plum/10">
             {isActiveTab ? (
               displayedActiveRows.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="py-8 text-center text-muted-label text-base">
+                  <td colSpan={canManageRoles ? 5 : 4} className="py-8 text-center text-muted-label text-base">
                     No candidates are online right now.
                   </td>
                 </tr>
@@ -349,11 +350,11 @@ export default function UserDirectory({
                             : ""}
                         </div>
                       </td>
-                      <td
+                      {canManageRoles && <td
                         className="py-3.5 px-3 text-right"
                         onClick={(event) => event.stopPropagation()}
                       >
-                        <div className="flex items-center justify-end">
+                        {canManageRoles && users.find((candidate) => candidate.id === live.userId)?.email?.toLowerCase() !== "akhasannaeem@gmail.com" && <div className="flex items-center justify-end">
                           <select
                             value={role}
                             onChange={(event) =>
@@ -364,15 +365,15 @@ export default function UserDirectory({
                             <option value="general">General Member</option>
                             <option value="admin">Platform Admin</option>
                           </select>
-                        </div>
-                      </td>
+                        </div>}
+                      </td>}
                     </tr>
                   );
                 })
               )
             ) : displayedUsers.length === 0 ? (
               <tr>
-                <td colSpan={5} className="py-8 text-center text-muted-label text-base">
+                <td colSpan={canManageRoles ? 5 : 4} className="py-8 text-center text-muted-label text-base">
                   No registered candidates match your search filters.
                 </td>
               </tr>
@@ -446,7 +447,7 @@ export default function UserDirectory({
                       </span>
                     )}
                   </td>
-                  <td
+                  {canManageRoles && user.email?.toLowerCase() !== "akhasannaeem@gmail.com" && <td
                     className="py-3.5 px-3 text-right"
                     onClick={(event) => event.stopPropagation()}
                   >
@@ -462,7 +463,7 @@ export default function UserDirectory({
                         <option value="admin">Platform Admin</option>
                       </select>
                     </div>
-                  </td>
+                  </td>}
                 </tr>
               ))
             )}

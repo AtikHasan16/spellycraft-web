@@ -29,6 +29,10 @@ const PAGE_METADATA = {
     description:
       "Browse free IELTS spelling, listening, reading, writing, and academic vocabulary resources in the SpellyCraft lexical mastery workspace.",
   },
+  "/pricing": {
+    title: "Free Pricing",
+    description: "SpellyCraft learning tools are free. See what is included and support our mission if you can.",
+  },
   "/contact": {
     title: "Contact SpellyCraft",
     description:

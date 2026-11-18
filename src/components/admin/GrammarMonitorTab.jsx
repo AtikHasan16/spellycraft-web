@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { HiAcademicCap, HiArrowPath, HiClock, HiMagnifyingGlass, HiTrash } from "react-icons/hi2";
 import apiClient from "../../services/apiClient";
+import { useAuth } from "../../context/AuthContext";
 import { GRAMMAR_TOPICS } from "../../data/grammarTopics";
 import {
   showConfirmModal,
@@ -22,6 +23,7 @@ function formatTimestamp(value) {
 }
 
 export default function GrammarMonitorTab() {
+  const { isSuperAdmin } = useAuth();
   const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
@@ -96,6 +98,7 @@ export default function GrammarMonitorTab() {
   }, [totalPages]);
 
   const handleDeleteQuestion = async (question) => {
+    if (!isSuperAdmin) return;
     const confirmation = await showConfirmModal({
       title: "Delete this grammar question?",
       text: question.question,
@@ -119,6 +122,7 @@ export default function GrammarMonitorTab() {
   };
 
   const handleDeleteGroup = async (group) => {
+    if (!isSuperAdmin) return;
     const confirmation = await showConfirmModal({
       title: `Delete all questions in "${getModuleTitle(group.module)}"?`,
       text: `This permanently deletes ${group.count} grammar question${group.count === 1 ? "" : "s"} from this module.`,
@@ -202,7 +206,7 @@ export default function GrammarMonitorTab() {
                     {group.count} question{group.count === 1 ? "" : "s"} · Latest: {formatTimestamp(group.latestActivity)}
                   </p>
                 </div>
-                <button
+                {isSuperAdmin && <button
                   type="button"
                   onClick={() => handleDeleteGroup(group)}
                   disabled={Boolean(busyAction)}
@@ -210,7 +214,7 @@ export default function GrammarMonitorTab() {
                 >
                   <HiTrash className="mr-2 inline h-4 w-4" />
                   Delete Group
-                </button>
+                </button>}
               </article>
             ))}
           </div>
@@ -266,7 +270,7 @@ export default function GrammarMonitorTab() {
                   <th className="p-3">Question</th>
                   <th className="p-3">Answer</th>
                   <th className="p-3">Added</th>
-                  <th className="p-3 text-right">Action</th>
+                  {isSuperAdmin && <th className="p-3 text-right">Action</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-plum/10">
@@ -288,7 +292,7 @@ export default function GrammarMonitorTab() {
                     <td className="whitespace-nowrap p-3 text-xs text-muted-label">
                       {formatTimestamp(question.createdAt)}
                     </td>
-                    <td className="p-3 text-right">
+                    {isSuperAdmin && <td className="p-3 text-right">
                       <button
                         type="button"
                         onClick={() => handleDeleteQuestion(question)}
@@ -298,7 +302,7 @@ export default function GrammarMonitorTab() {
                       >
                         <HiTrash className="h-4 w-4" />
                       </button>
-                    </td>
+                    </td>}
                   </tr>
                 ))}
               </tbody>

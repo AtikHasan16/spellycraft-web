@@ -1,49 +1,48 @@
 import { Link } from "react-router";
 
-/**
- * Minimalist Universal Footer for SpellyCraft
- * Conforms to SpellyCraft brand rules:
- * - Minimal, distraction-free design
- * - Copyright & domain credit
- * - Microsoft Edge TTS technology attribution
- * - Navigation links (About, Contact, Resources, Support, Community)
- */
+const links = [
+  { to: "/resources", label: "Resources" },
+  { to: "/about", label: "About" },
+  { to: "/contact", label: "Contact" },
+  { to: "/workspace/community", label: "Community" },
+  { to: "/support-us", label: "Support" },
+];
+
 export default function MinimalFooter() {
   return (
-    <footer className="border-t border-plum/15 bg-white py-5 text-xs text-muted-label w-full select-none">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
-        <div className="flex flex-col sm:flex-row items-center sm:space-x-2">
-          <span className="font-bold text-plum">SpellyCraft</span>
-          <span className="hidden sm:inline text-plum/30">•</span>
-          <span>© {new Date().getFullYear()} SpellyCraft (spellycraft.com). All rights reserved.</span>
+    <footer className="mt-auto w-full border-t border-plum/15 bg-plum/5 py-9 text-muted-label sm:py-10">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6">
+        <div className="flex flex-col items-center gap-3 text-center sm:flex-row sm:justify-between sm:text-left">
+          <Link
+            to="/"
+            className="text-base font-bold tracking-tight text-body-dark focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-plum"
+          >
+            SpellyCraft
+          </Link>
+          <nav
+            aria-label="Footer navigation"
+            className="flex flex-wrap items-center justify-center gap-x-1 sm:justify-end sm:gap-x-2"
+          >
+            {links.map(({ to, label }) => (
+              <Link
+                key={to}
+                to={to}
+                className="inline-flex min-h-11 items-center rounded px-2 text-sm text-muted-label transition-colors duration-150 hover:text-plum hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-plum"
+              >
+                {label}
+              </Link>
+            ))}
+          </nav>
         </div>
 
-        <div className="flex flex-col sm:flex-row items-center space-x-1 sm:space-x-2 text-[11px] gap-1">
-          <span>Speech synthesized via</span>
-          <span className="font-semibold text-body-dark">Microsoft Edge Neural TTS</span>
-                  <span className="hidden sm:inline text-plum/30">•</span>
-                  <span>AI assistance powered by</span>
-                  <span className="font-semibold text-body-dark">Google's Gemini (via Google AI Studio)</span>
-                  <span className="hidden sm:inline text-plum/30">•</span>
-                  <span className="font-semibold text-body-dark">NVIDIA NIM</span>
-                </div>
+        <div className="my-5 border-t border-plum/10 sm:my-6" />
 
-        <div className="flex items-center space-x-4 font-medium text-body-dark text-xs">
-          <Link to="/resources" className="hover:text-plum transition">
-            Resources
-          </Link>
-          <Link to="/about" className="hover:text-plum transition">
-            About
-          </Link>
-          <Link to="/contact" className="hover:text-plum transition">
-            Contact
-          </Link>
-          <Link to="/workspace/community" className="hover:text-plum transition">
-            Community
-          </Link>
-          <Link to="/support-us" className="text-plum hover:underline font-bold transition">
-            Support
-          </Link>
+        <div className="flex flex-col items-center gap-2 text-center text-xs leading-5 sm:flex-row sm:justify-between sm:text-left">
+          <p>© {new Date().getFullYear()} SpellyCraft. All rights reserved.</p>
+          <p className="text-balance sm:whitespace-nowrap">
+            <span className="whitespace-nowrap">Speech by Microsoft Edge TTS ·</span>{" "}
+            <span className="whitespace-nowrap">AI by Google Gemini and NVIDIA NIM</span>
+          </p>
         </div>
       </div>
     </footer>

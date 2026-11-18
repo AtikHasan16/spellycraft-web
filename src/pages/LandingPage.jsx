@@ -9,6 +9,7 @@ import {
   HiSpeakerWave,
 } from "react-icons/hi2";
 import MinimalFooter from "../components/MinimalFooter";
+import PublicNavbar from "../components/PublicNavbar";
 import { speakWithMicrosoftTTS } from "../utils/speechTts";
 
 const features = [
@@ -295,68 +296,25 @@ function AuthoritySection() {
 
 export default function LandingPage() {
   return (
-    <div className="overflow-hidden bg-white text-body-dark">
-      <header className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
-        <Link to="/" className="text-xl font-black tracking-tight text-plum">
-          SpellyCraft<span aria-hidden="true">.</span>
-        </Link>
-        <nav aria-label="Main navigation" className="flex items-center gap-2 sm:gap-5">
-          <Link
-            to="/support-us"
-            className="min-h-11 inline-flex items-center px-2 text-sm font-semibold text-muted-label hover:text-plum"
-          >
-            Support Us
-          </Link>
-          <Link
-            to="/resources"
-            className="min-h-11 inline-flex items-center px-2 text-sm font-semibold text-muted-label hover:text-plum"
-          >
-            Resources
-          </Link>
-          <Link
-            to="/about"
-            className="hidden min-h-11 items-center px-2 text-sm font-semibold text-muted-label hover:text-plum sm:inline-flex"
-          >
-            About
-          </Link>
-          <Link
-            to="/contact"
-            className="hidden min-h-11 items-center px-2 text-sm font-semibold text-muted-label hover:text-plum sm:inline-flex"
-          >
-            Contact
-          </Link>
-          <Link
-            to="/login"
-            className="min-h-11 inline-flex items-center px-3 text-sm font-bold text-plum hover:text-plum-hover"
-          >
-            Sign in
-          </Link>
-          <Link
-            to="/register"
-            className="imlaa-btn-primary min-h-11 px-4 text-sm font-bold"
-          >
-            Create account
-          </Link>
-        </nav>
-      </header>
+    <div className="flex min-h-screen flex-col overflow-hidden bg-white text-body-dark">
+      <PublicNavbar />
 
-      <main>
+      <main className="flex-1">
         <section className="bg-linear-to-br from-[#faf8f7] via-white to-[#f2edef]">
           <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-12 sm:px-6 sm:py-16 lg:grid-cols-2 lg:gap-12 lg:py-20">
             <div>
               <p className="inline-flex items-center gap-2 rounded-full border border-plum/15 bg-white px-3 py-1.5 text-xs font-bold uppercase tracking-[0.14em] text-plum shadow-sm">
                 <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                Linguistic mastery workspace
+                Free IELTS vocabulary and spelling practice
               </p>
               <h1 className="mt-5 text-4xl font-black leading-[1.08] tracking-tight text-body-dark sm:text-5xl lg:text-6xl">
-                Secure Band 8.0+ in IELTS Writing &amp; Listening
+                Learn with 2,000+ words, clear natural audio, and interactive spelling checks.
               </h1>
               <p className="mt-5 max-w-xl text-lg leading-relaxed text-muted-label sm:text-xl">
-                Master English orthography and advance with phonemic speech synthesis.
+                Explore a growing vocabulary library with clear pronunciation audio for every word, then build confidence with focused spelling practice.
               </p>
               <p className="mt-3 max-w-xl leading-relaxed text-body-dark/80">
-                Replace passive word lists with active spelling recall, academic
-                collocations, and clear practice you can return to.
+                All learning features are free, with no subscription required.
               </p>
               <div className="mt-7 flex flex-col gap-3 sm:flex-row">
                 <Link
@@ -373,9 +331,6 @@ export default function LandingPage() {
                   Start free practice
                 </Link>
               </div>
-              <p className="mt-3 text-sm text-muted-label">
-                Secure sign-in protects your personal learning progress.
-              </p>
             </div>
             <WorkspacePreview />
           </div>

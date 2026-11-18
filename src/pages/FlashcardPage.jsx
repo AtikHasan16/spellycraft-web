@@ -33,7 +33,15 @@ import {
   paginateFlashcardGroups,
 } from "../utils/flashcardGroups";
 
-const PARTS = ["All Active", "Listening Vocabs", "Uploaded", "Mistakes"];
+const PARTS = [
+  "All Active",
+  "Listening Vocabs",
+  "Speaking Vocabs",
+  "Reading Vocabs",
+  "Writing Vocabs",
+  "Uploaded",
+  "Mistakes",
+];
 
 /**
  * Flashcard page (src/pages/FlashcardPage.jsx)
@@ -274,6 +282,7 @@ export default function FlashcardPage() {
       try {
         const loaded = await fetchVocabularyCorpus({
           topic: group.title,
+          targetTab: group.targetTab,
           userId: user?.id,
           userRole: user?.role || "general",
           userName: user?.name,
@@ -621,6 +630,7 @@ export default function FlashcardPage() {
     try {
       const corpus = await fetchVocabularyCorpus({
         topic: quizTopic || undefined,
+        targetTab: selectedGroup?.targetTab,
       });
       const quizCorpus = corpus.filter(
         (item) => item.word && getVocabularyMeaning(item, selectedLanguage),

@@ -3,6 +3,7 @@ import { requireSupabaseUserId, toCamel } from "./dataMappers";
 import { recordAuditLog } from "./auditService";
 import { queryCache, invalidateVocabularyCache } from "./queryCache";
 import { telemetry } from "./telemetryService";
+import { buildVocabularyStats } from "../utils/vocabularyStats";
 
 export async function getVocabularyStats(params = {}) {
   const cacheKey = `vocab:stats:${params.userId || "all"}:${params.userRole || "general"}`;
@@ -21,44 +22,7 @@ export async function getVocabularyStats(params = {}) {
       groupedRows = null;
     }
 
-    const isAdmin = params.userRole === "admin";
-    const byTopic = new Map();
-    const uploadedTopicsMap = new Map();
-    const activeTopicsMap = new Map();
-    const listeningTopicsMap = new Map();
-    let totalUploaded = 0;
-    let totalCount = 0;
-
-    if (groupedRows) {
-      // Use pre-grouped database counts
-      for (const row of groupedRows) {
-        const count = Number(row.count) || 0;
-        const topic = row.topic;
-        const targetTab = row.target_tab;
-        totalCount += count;
-        byTopic.set(topic, (byTopic.get(topic) || 0) + count);
-
-        if (targetTab === "listening") {
-          listeningTopicsMap.set(
-            topic,
-            (listeningTopicsMap.get(topic) || 0) + count
-          );
-        } else if (targetTab === "active") {
-          activeTopicsMap.set(
-            topic,
-            (activeTopicsMap.get(topic) || 0) + count
-          );
-        } else if (targetTab === "uploaded") {
-          totalUploaded += count;
-          uploadedTopicsMap.set(topic, {
-            count,
-            uploaderName:
-              row.uploaded_by_name ||
-              (isAdmin ? "Admin" : params.userName || "You"),
-          });
-        }
-      }
-    } else {
+    if (!groupedRows) {
       // Fallback: Query columns and aggregate with adaptive column detection
       let allWords = null;
 
@@ -94,55 +58,17 @@ export async function getVocabularyStats(params = {}) {
         }
       }
 
-      for (const word of allWords || []) {
-        const { topic, target_tab: targetTab } = word;
-        totalCount += 1;
-        byTopic.set(topic, (byTopic.get(topic) || 0) + 1);
-        if (targetTab === "listening") {
-          listeningTopicsMap.set(
-            topic,
-            (listeningTopicsMap.get(topic) || 0) + 1
-          );
-        } else if (targetTab === "uploaded") {
-          totalUploaded += 1;
-          const current = uploadedTopicsMap.get(topic);
-          if (current) {
-            current.count += 1;
-          } else {
-            uploadedTopicsMap.set(topic, {
-              count: 1,
-              uploaderName:
-                word.uploaded_by_name ||
-                (isAdmin ? "Admin" : params.userName || "You"),
-            });
-          }
-        } else {
-          // default to active
-          activeTopicsMap.set(topic, (activeTopicsMap.get(topic) || 0) + 1);
-        }
-      }
+      groupedRows = (allWords || []).map((word) => ({
+        ...word,
+        count: 1,
+      }));
     }
 
     return {
-      data: {
-        success: true,
-        totalCount,
-        uploadedCount: totalUploaded,
-        byTopic: Object.fromEntries(byTopic),
-        activeTopics: [...activeTopicsMap].map(([title, count]) => ({
-          title,
-          count,
-        })),
-        listeningTopics: [...listeningTopicsMap].map(([title, count]) => ({
-          title,
-          count,
-        })),
-        uploadedTopics: [...uploadedTopicsMap].map(([title, info]) => ({
-          title,
-          count: info.count,
-          uploaderName: info.uploaderName,
-        })),
-      },
+      data: buildVocabularyStats(groupedRows, {
+        isAdmin: params.userRole === "admin",
+        userName: params.userName,
+      }),
     };
   }, 45000); // 45-second cache
 }
@@ -286,27 +212,32 @@ export async function deleteVocabulary(url, config = {}) {
 
   if (url === "/vocabulary/topic") {
     const topic = config.data?.topic;
+    const targetTab = config.data?.targetTab;
     const deletedByName = config.data?.deletedByName || "Admin";
     const deletedById = requireSupabaseUserId(config.data?.userId);
     if (!topic) throw new Error("Missing topic name to delete");
 
-    const { data, error: selectError } = await supabase
+    let selectQuery = supabase
       .from("vocabularies")
       .select("id")
       .eq("topic", topic);
+    let deleteQuery = supabase.from("vocabularies").delete().eq("topic", topic);
+    if (targetTab) {
+      selectQuery = selectQuery.eq("target_tab", targetTab);
+      deleteQuery = deleteQuery.eq("target_tab", targetTab);
+    }
+
+    const { data, error: selectError } = await selectQuery;
     if (selectError) throw selectError;
     const count = data?.length || 0;
-    const { error: deleteError } = await supabase
-      .from("vocabularies")
-      .delete()
-      .eq("topic", topic);
+    const { error: deleteError } = await deleteQuery;
     if (deleteError) throw deleteError;
 
     await recordAuditLog({
       userId: deletedById,
       action: "VOCAB_TOPIC_DELETED",
       userName: deletedByName,
-      details: `Deleted topic "${topic}" (${count} words removed)`,
+      details: `Deleted topic "${topic}"${targetTab ? ` [tab: ${targetTab}]` : ""} (${count} words removed)`,
       timestamp: new Date().toISOString(),
     });
 

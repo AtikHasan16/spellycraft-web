@@ -27,7 +27,15 @@ import {
   paginateSpellingGroups,
 } from "../utils/spellingGroups";
 
-const PARTS = ["All Active", "Listening Vocabs", "Uploaded", "Mistakes"];
+const PARTS = [
+  "All Active",
+  "Listening Vocabs",
+  "Speaking Vocabs",
+  "Reading Vocabs",
+  "Writing Vocabs",
+  "Uploaded",
+  "Mistakes",
+];
 
 /**
  * Spelling page (src/pages/SpellingPage.jsx)
@@ -289,6 +297,7 @@ export default function SpellingPage() {
         const res = await apiClient.get("/vocabulary", {
           params: {
             topic: group.title,
+            targetTab: group.targetTab,
             userId: user?.id,
             userRole: user?.role || "general",
             userName: user?.name,
@@ -300,6 +309,7 @@ export default function SpellingPage() {
         if (loaded.length === 0) {
           const fallback = await apiClient.get("/vocabulary", {
             params: {
+              targetTab: group.targetTab,
               userId: user?.id,
               userRole: user?.role || "general",
               userName: user?.name,
@@ -572,14 +582,24 @@ export default function SpellingPage() {
     try {
       const pageSize = 500;
       const firstPage = await apiClient.get("/vocabulary", {
-        params: { topic: quizTopic || undefined, page: 1, pageSize },
+        params: {
+          topic: quizTopic || undefined,
+          targetTab: selectedGroup?.targetTab,
+          page: 1,
+          pageSize,
+        },
       });
       const corpus = [...(firstPage.data?.data || [])];
       const totalCount = firstPage.data?.totalCount ?? corpus.length;
       const pageCount = Math.ceil(totalCount / pageSize);
       for (let page = 2; page <= pageCount; page += 1) {
         const pageResult = await apiClient.get("/vocabulary", {
-          params: { topic: quizTopic || undefined, page, pageSize },
+          params: {
+            topic: quizTopic || undefined,
+            targetTab: selectedGroup?.targetTab,
+            page,
+            pageSize,
+          },
         });
         const pageWords = pageResult.data?.data || [];
         if (pageWords.length === 0) break;

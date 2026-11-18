@@ -43,6 +43,7 @@ export function buildSpellingGroups({
     groups.push({
       id: `spelling-active-${idx}`,
       part: "All Active",
+      targetTab: "active",
       title: topic.title,
       description:
         topic.title === "Academic Word List: Sublist A"
@@ -56,21 +57,30 @@ export function buildSpellingGroups({
     });
   }
 
-  for (const [idx, topic] of (vocabStats?.listeningTopics || []).entries()) {
-    const summary = getSpellingMasterySummary(visibleMastery, topic.title);
-    const incorrect = summary.doNotKnow + summary.forgot;
-    groups.push({
-      id: `spelling-listening-${idx}`,
-      part: "Listening Vocabs",
-      title: topic.title,
-      description: `IELTS listening module vocabulary (${topic.count} lexemes).`,
-      wordsCount: topic.count,
-      masteredCount: summary.know,
-      incorrectCount: incorrect,
-      percent:
-        topic.count > 0 ? Math.min(100, Math.round((summary.know / topic.count) * 100)) : 0,
-      hasMistakes: incorrect > 0,
-    });
+  const destinations = [
+    ["listeningTopics", "listening", "Listening Vocabs", "listening module"],
+    ["speakingTopics", "speaking", "Speaking Vocabs", "speaking module"],
+    ["readingTopics", "reading", "Reading Vocabs", "reading module"],
+    ["writingTopics", "writing", "Writing Vocabs", "writing module"],
+  ];
+  for (const [topicsKey, targetTab, part, moduleName] of destinations) {
+    for (const [idx, topic] of (vocabStats?.[topicsKey] || []).entries()) {
+      const summary = getSpellingMasterySummary(visibleMastery, topic.title);
+      const incorrect = summary.doNotKnow + summary.forgot;
+      groups.push({
+        id: `spelling-${targetTab}-${idx}`,
+        part,
+        targetTab,
+        title: topic.title,
+        description: `IELTS ${moduleName} vocabulary (${topic.count} lexemes).`,
+        wordsCount: topic.count,
+        masteredCount: summary.know,
+        incorrectCount: incorrect,
+        percent:
+          topic.count > 0 ? Math.min(100, Math.round((summary.know / topic.count) * 100)) : 0,
+        hasMistakes: incorrect > 0,
+      });
+    }
   }
 
   for (const [idx, topic] of (vocabStats?.uploadedTopics || []).entries()) {
@@ -79,6 +89,7 @@ export function buildSpellingGroups({
     groups.push({
       id: `spelling-uploaded-${idx}`,
       part: "Uploaded",
+      targetTab: "uploaded",
       title: topic.title,
       description: `Custom uploaded corpus category with ${topic.count} terms.`,
       wordsCount: topic.count,

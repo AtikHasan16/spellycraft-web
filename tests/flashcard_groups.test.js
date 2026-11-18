@@ -14,6 +14,9 @@ const VOCAB_STATS = {
     { title: "Science", count: 6 },
   ],
   listeningTopics: [{ title: "Listening Set", count: 2 }],
+  speakingTopics: [{ title: "Speaking Set", count: 3 }],
+  readingTopics: [{ title: "Reading Set", count: 4 }],
+  writingTopics: [{ title: "Writing Set", count: 5 }],
   uploadedTopics: [{ title: "My Upload", count: 5, uploaderName: "Rina" }],
 };
 
@@ -52,6 +55,7 @@ test("flashcard groups derive mastery and mistake counts from local + cloud data
 
   const academic = groups.find((group) => group.title === "Academic Word List: Sublist A");
   assert.equal(academic.part, "All Active");
+  assert.equal(academic.targetTab, "active");
   assert.equal(academic.wordsCount, 10);
   // Local knew=1, legacy known=1 → max keeps the higher value.
   assert.equal(academic.knownCount, 1);
@@ -62,10 +66,20 @@ test("flashcard groups derive mastery and mistake counts from local + cloud data
 
   const listening = groups.find((group) => group.part === "Listening Vocabs");
   assert.equal(listening.percent, 0);
+  assert.equal(listening.targetTab, "listening");
+  for (const [part, targetTab] of [
+    ["Speaking Vocabs", "speaking"],
+    ["Reading Vocabs", "reading"],
+    ["Writing Vocabs", "writing"],
+  ]) {
+    const group = groups.find((item) => item.part === part);
+    assert.equal(group.targetTab, targetTab);
+  }
 
   const uploaded = groups.find((group) => group.part === "Uploaded");
   assert.equal(uploaded.uploaderName, "Rina");
   assert.equal(uploaded.wordsCount, 5);
+  assert.equal(uploaded.targetTab, "uploaded");
 
   const mistakeCard = groups.find((group) => group.part === "Mistakes");
   assert.equal(mistakeCard.title, "Academic Word List: Sublist A");

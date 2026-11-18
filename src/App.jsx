@@ -32,6 +32,7 @@ const NotFoundPage = lazy(() => import("./pages/NotFoundPage"));
 const ResetPasswordPage = lazy(() => import("./pages/ResetPasswordPage"));
 const ResourcesPage = lazy(() => import("./pages/ResourcesPage"));
 const PrivateResourcesPage = lazy(() => import("./pages/PrivateResourcesPage"));
+const PricingPage = lazy(() => import("./pages/PricingPage"));
 const HelpAssistant = lazy(() => import("./features/help/HelpAssistant"));
 const HelpAssistantPage = lazy(() =>
   import("./features/help/HelpAssistant").then((module) => ({
@@ -106,6 +107,12 @@ function ProtectedRoute({ children, requiredRole }) {
 }
 
 export default function App() {
+  useEffect(() => {
+    const preventContextMenu = (event) => event.preventDefault();
+    document.addEventListener("contextmenu", preventContextMenu, true);
+    return () => document.removeEventListener("contextmenu", preventContextMenu, true);
+  }, []);
+
   return (
     <AuthProvider>
       <BrowserRouter>
@@ -121,6 +128,7 @@ export default function App() {
           <Route path="/resources" element={<PageRoute component={ResourcesPage} />} />
           <Route path="/contact" element={<PageRoute component={ContactPage} />} />
           <Route path="/support-us" element={<PageRoute component={SupportUsPage} />} />
+          <Route path="/pricing" element={<PageRoute component={PricingPage} />} />
           <Route
             path="/help"
             element={

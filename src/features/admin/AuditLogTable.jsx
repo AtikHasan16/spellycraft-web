@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { HiTrash, HiChevronLeft, HiChevronRight, HiArrowDownTray } from "react-icons/hi2";
 
-export default function AuditLogTable({ logs = [], onClear, onDelete }) {
+export default function AuditLogTable({ logs = [], onClear, onDelete, canDelete = false }) {
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 5;
 
@@ -51,7 +51,7 @@ export default function AuditLogTable({ logs = [], onClear, onDelete }) {
           <span className="imlaa-badge text-base">{logs.length} Events</span>
           {logs.length > 0 && (
             <>
-              <button
+              {canDelete && <button
                 type="button"
                 onClick={handleExportJson}
                 className="imlaa-btn-secondary min-h-11 py-2 px-3 text-sm text-plum border-plum/25 hover:bg-plum/5 flex items-center space-x-1.5 cursor-pointer"
@@ -59,7 +59,7 @@ export default function AuditLogTable({ logs = [], onClear, onDelete }) {
               >
                 <HiArrowDownTray className="w-4 h-4" />
                 <span>Export JSON</span>
-              </button>
+              </button>}
               <button
                 type="button"
                 onClick={onClear}
@@ -87,7 +87,7 @@ export default function AuditLogTable({ logs = [], onClear, onDelete }) {
                   <th className="py-3 px-3">Candidate & ID</th>
                   <th className="py-3 px-3">Event Details</th>
                   <th className="py-3 px-3">Timestamp</th>
-                  <th className="py-3 px-3 text-right">Delete</th>
+                  {canDelete && <th className="py-3 px-3 text-right">Delete</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-plum/10">
@@ -109,7 +109,7 @@ export default function AuditLogTable({ logs = [], onClear, onDelete }) {
                     <td className="py-3 px-3 font-mono text-sm text-muted-label whitespace-nowrap">
                       {new Date(log.timestamp).toLocaleString()}
                     </td>
-                    <td className="py-3 px-3 text-right">
+                    {canDelete && <td className="py-3 px-3 text-right">
                       <button
                         type="button"
                         onClick={() => onDelete(log.id)}
@@ -118,7 +118,7 @@ export default function AuditLogTable({ logs = [], onClear, onDelete }) {
                       >
                         <HiTrash className="w-4 h-4" />
                       </button>
-                    </td>
+                    </td>}
                   </tr>
                 ))}
               </tbody>
