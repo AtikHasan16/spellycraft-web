@@ -41,7 +41,7 @@ export default function PricingPage() {
         {/* Free plan features */}
         <section
           aria-label="Free plan features"
-          className="mt-10 w-full max-w-4xl rounded-3xl border border-plum/15 bg-white p-7 shadow-sm sm:p-9"
+          className="mt-10 w-full max-w-6xl rounded-3xl border border-plum/15 bg-white p-7 shadow-sm sm:p-9"
         >
           <div className="flex items-end justify-between gap-4 border-b border-plum/10 pb-6">
             <div>

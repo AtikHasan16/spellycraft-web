@@ -254,7 +254,7 @@ export default function ProfilePage() {
   const initials = getInitials(user?.name);
 
   return (
-    <div className="w-full max-w-5xl mx-auto space-y-8 animate-slide-up pb-12">
+    <div className="w-full max-w-6xl mx-auto space-y-8 animate-slide-up pb-12">
       {/* Page Title & Status Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 pb-4 border-b border-plum/15">
         <div>

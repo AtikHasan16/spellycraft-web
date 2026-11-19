@@ -49,7 +49,7 @@ export default function FlashcardDrillView({
         </button>
 
         {selectedGroup && (
-          <span className="imlaa-badge text-base">{selectedGroup.title}</span>
+          <span className="imlaa-badge text-xs sm:text-sm">{selectedGroup.title}</span>
         )}
       </div>
 
