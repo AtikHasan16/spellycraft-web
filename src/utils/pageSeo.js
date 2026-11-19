@@ -43,6 +43,14 @@ const PAGE_METADATA = {
     description:
       "Support SpellyCraft and help make free English vocabulary, spelling, and grammar practice available to learners.",
   },
+  "/terms": {
+    title: "Terms of Service",
+    description: "Terms for using the SpellyCraft English learning platform.",
+  },
+  "/privacy": {
+    title: "Privacy Policy",
+    description: "How SpellyCraft collects, uses, and protects personal information.",
+  },
   "/help": {
     title: "SpellyCraft Help",
     description:

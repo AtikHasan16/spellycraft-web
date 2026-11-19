@@ -33,6 +33,7 @@ const ResetPasswordPage = lazy(() => import("./pages/ResetPasswordPage"));
 const ResourcesPage = lazy(() => import("./pages/ResourcesPage"));
 const PrivateResourcesPage = lazy(() => import("./pages/PrivateResourcesPage"));
 const PricingPage = lazy(() => import("./pages/PricingPage"));
+const LegalPage = lazy(() => import("./pages/LegalPage"));
 const HelpAssistant = lazy(() => import("./features/help/HelpAssistant"));
 const HelpAssistantPage = lazy(() =>
   import("./features/help/HelpAssistant").then((module) => ({
@@ -129,6 +130,8 @@ export default function App() {
           <Route path="/contact" element={<PageRoute component={ContactPage} />} />
           <Route path="/support-us" element={<PageRoute component={SupportUsPage} />} />
           <Route path="/pricing" element={<PageRoute component={PricingPage} />} />
+          <Route path="/terms" element={<PageRoute component={LegalPage} />} />
+          <Route path="/privacy" element={<PageRoute component={LegalPage} />} />
           <Route
             path="/help"
             element={

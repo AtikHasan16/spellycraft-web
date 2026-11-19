@@ -4,7 +4,7 @@ BEGIN;
 -- Volunteer applications (public, login-free submissions)
 -- ============================================================================
 
-CREATE TABLE public.volunteer_applications (
+CREATE TABLE IF NOT EXISTS public.volunteer_applications (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   full_name TEXT NOT NULL CHECK (char_length(btrim(full_name)) BETWEEN 1 AND 120),
   designation TEXT NOT NULL CHECK (char_length(btrim(designation)) BETWEEN 1 AND 160),
@@ -23,9 +23,9 @@ CREATE TABLE public.volunteer_applications (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_volunteer_applications_status_created
+CREATE INDEX IF NOT EXISTS idx_volunteer_applications_status_created
   ON public.volunteer_applications (status, created_at DESC);
-CREATE INDEX idx_volunteer_applications_gmail_created
+CREATE INDEX IF NOT EXISTS idx_volunteer_applications_gmail_created
   ON public.volunteer_applications (lower(gmail), created_at DESC);
 
 CREATE OR REPLACE FUNCTION public.set_volunteer_updated_at()
@@ -39,6 +39,8 @@ BEGIN
 END;
 $$;
 
+DROP TRIGGER IF EXISTS volunteer_applications_set_updated_at
+  ON public.volunteer_applications;
 CREATE TRIGGER volunteer_applications_set_updated_at
   BEFORE UPDATE ON public.volunteer_applications
   FOR EACH ROW EXECUTE FUNCTION public.set_volunteer_updated_at();
@@ -65,6 +67,8 @@ BEGIN
 END;
 $$;
 
+DROP TRIGGER IF EXISTS volunteer_applications_cooldown
+  ON public.volunteer_applications;
 CREATE TRIGGER volunteer_applications_cooldown
   BEFORE INSERT ON public.volunteer_applications
   FOR EACH ROW EXECUTE FUNCTION public.enforce_volunteer_application_cooldown();
@@ -78,14 +82,20 @@ GRANT INSERT (
 GRANT SELECT ON TABLE public.volunteer_applications TO authenticated;
 GRANT UPDATE (status) ON TABLE public.volunteer_applications TO authenticated;
 
+DROP POLICY IF EXISTS "Anyone submits a pending volunteer application"
+  ON public.volunteer_applications;
 CREATE POLICY "Anyone submits a pending volunteer application"
   ON public.volunteer_applications FOR INSERT TO anon, authenticated
   WITH CHECK (status = 'new');
 
+DROP POLICY IF EXISTS "Admins read volunteer applications"
+  ON public.volunteer_applications;
 CREATE POLICY "Admins read volunteer applications"
   ON public.volunteer_applications FOR SELECT TO authenticated
   USING (public.is_admin());
 
+DROP POLICY IF EXISTS "Admins update volunteer application status"
+  ON public.volunteer_applications;
 CREATE POLICY "Admins update volunteer application status"
   ON public.volunteer_applications FOR UPDATE TO authenticated
   USING (public.is_admin())
@@ -98,7 +108,7 @@ CREATE POLICY "Admins update volunteer application status"
 -- Admin notification center (database-backed feed + read state)
 -- ============================================================================
 
-CREATE TABLE public.admin_notifications (
+CREATE TABLE IF NOT EXISTS public.admin_notifications (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   category TEXT NOT NULL CHECK (
     category IN ('volunteer', 'registration', 'community', 'feature', 'bug')
@@ -114,9 +124,9 @@ CREATE TABLE public.admin_notifications (
   UNIQUE (source_table, source_id)
 );
 
-CREATE INDEX idx_admin_notifications_unread_created
+CREATE INDEX IF NOT EXISTS idx_admin_notifications_unread_created
   ON public.admin_notifications (read_at, created_at DESC);
-CREATE INDEX idx_admin_notifications_category_unread
+CREATE INDEX IF NOT EXISTS idx_admin_notifications_category_unread
   ON public.admin_notifications (category, read_at);
 
 ALTER TABLE public.admin_notifications ENABLE ROW LEVEL SECURITY;
@@ -125,10 +135,14 @@ REVOKE ALL ON TABLE public.admin_notifications FROM PUBLIC, anon, authenticated;
 GRANT SELECT ON TABLE public.admin_notifications TO authenticated;
 GRANT UPDATE (read_at) ON TABLE public.admin_notifications TO authenticated;
 
+DROP POLICY IF EXISTS "Admins read notifications"
+  ON public.admin_notifications;
 CREATE POLICY "Admins read notifications"
   ON public.admin_notifications FOR SELECT TO authenticated
   USING (public.is_admin());
 
+DROP POLICY IF EXISTS "Admins mark notifications read"
+  ON public.admin_notifications;
 CREATE POLICY "Admins mark notifications read"
   ON public.admin_notifications FOR UPDATE TO authenticated
   USING (public.is_admin())
@@ -165,6 +179,7 @@ BEGIN
     NEW.id
   )
   ON CONFLICT (source_table, source_id) DO NOTHING;
+  RETURN NEW;
 EXCEPTION WHEN OTHERS THEN
   RAISE WARNING 'Could not create volunteer admin notification: %', SQLERRM;
   RETURN NEW;
@@ -194,6 +209,7 @@ BEGIN
     NEW.id
   )
   ON CONFLICT (source_table, source_id) DO NOTHING;
+  RETURN NEW;
 EXCEPTION WHEN OTHERS THEN
   RAISE WARNING 'Could not create registration admin notification: %', SQLERRM;
   RETURN NEW;
@@ -228,6 +244,7 @@ BEGIN
     NEW.id
   )
   ON CONFLICT (source_table, source_id) DO NOTHING;
+  RETURN NEW;
 EXCEPTION WHEN OTHERS THEN
   RAISE WARNING 'Could not create community admin notification: %', SQLERRM;
   RETURN NEW;
@@ -253,24 +270,33 @@ BEGIN
     NEW.id
   )
   ON CONFLICT (source_table, source_id) DO NOTHING;
+  RETURN NEW;
 EXCEPTION WHEN OTHERS THEN
   RAISE WARNING 'Could not create developer admin notification: %', SQLERRM;
   RETURN NEW;
 END;
 $$;
 
+DROP TRIGGER IF EXISTS volunteer_applications_admin_notification
+  ON public.volunteer_applications;
 CREATE TRIGGER volunteer_applications_admin_notification
   AFTER INSERT ON public.volunteer_applications
   FOR EACH ROW EXECUTE FUNCTION public.notify_admin_volunteer_application();
 
+DROP TRIGGER IF EXISTS profiles_admin_registration_notification
+  ON public.profiles;
 CREATE TRIGGER profiles_admin_registration_notification
   AFTER INSERT ON public.profiles
   FOR EACH ROW EXECUTE FUNCTION public.notify_admin_registration();
 
+DROP TRIGGER IF EXISTS community_tickets_admin_notification
+  ON public.community_tickets;
 CREATE TRIGGER community_tickets_admin_notification
   AFTER INSERT ON public.community_tickets
   FOR EACH ROW EXECUTE FUNCTION public.notify_admin_community_ticket();
 
+DROP TRIGGER IF EXISTS developer_applications_admin_notification
+  ON public.developer_applications;
 CREATE TRIGGER developer_applications_admin_notification
   AFTER INSERT ON public.developer_applications
   FOR EACH ROW EXECUTE FUNCTION public.notify_admin_developer_application();
