@@ -9,6 +9,7 @@ import {
   showErrorAlert,
   showSuccessToast,
 } from "../../utils/sweetalert";
+import { useAuth } from "../../context/AuthContext";
 
 const ERROR_PAGE_SIZE = 5;
 
@@ -26,6 +27,7 @@ function formatProvider(value) {
 }
 
 export default function AiUsageTab() {
+  const { isSuperAdmin } = useAuth();
   const [analytics, setAnalytics] = useState(null);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
@@ -186,7 +188,7 @@ export default function AiUsageTab() {
               and 404 a model or endpoint mismatch.
             </p>
           </div>
-          <button
+          {isSuperAdmin && <button
             type="button"
             onClick={handleClearErrors}
             disabled={loading || clearingErrors || recentErrors.length === 0}
@@ -194,7 +196,7 @@ export default function AiUsageTab() {
           >
             <HiTrash className="h-4 w-4" aria-hidden="true" />
             {clearingErrors ? "Clearing..." : "Clear error logs"}
-          </button>
+          </button>}
         </div>
         {loading && !analytics ? (
           <p className="text-sm text-muted-label">Loading recent provider errors...</p>

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { supabase } from "../services/supabaseClient";
 import { getDeviceInfo } from "../utils/deviceInfo";
 import { getCachedProfile, setCachedProfile } from "./profileStorage";
+import { SUPER_ADMIN_EMAIL } from "./permissions";
 
 export function useSession() {
   const [user, setUser] = useState(() => getCachedProfile(null));
@@ -39,7 +40,7 @@ export function useSession() {
         fallbackName;
       const resolvedAvatar =
         profile?.avatar_url || cached?.avatarUrl || fallbackAvatar;
-      const resolvedRole = profile?.role === "admin" ? "admin" : "general";
+      const resolvedRole = authUser.email?.trim().toLowerCase() === SUPER_ADMIN_EMAIL || profile?.role === "admin" ? "admin" : "general";
       const resolvedUser = {
         id: authUser.id,
         name: resolvedName,
@@ -95,7 +96,7 @@ export function useSession() {
           authUser.email?.split("@")[0] ||
           "Candidate",
         email: authUser.email,
-        role: "general",
+        role: authUser.email?.trim().toLowerCase() === SUPER_ADMIN_EMAIL ? "admin" : "general",
         avatarUrl: cached?.avatarUrl || null,
         authProvider: authUser.app_metadata?.provider || "email",
         createdAt: authUser.created_at || new Date().toISOString(),

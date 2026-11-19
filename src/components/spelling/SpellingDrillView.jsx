@@ -110,6 +110,11 @@ export default function SpellingDrillView({
               <input
                 type="text"
                 autoFocus
+                autoComplete="off"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
+                onContextMenu={(event) => event.preventDefault()}
                 disabled={hasAnsweredCurrent}
                 value={spellingInput}
                 onChange={(e) => onInputChange(e.target.value)}

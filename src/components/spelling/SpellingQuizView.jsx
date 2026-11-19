@@ -79,6 +79,11 @@ export default function SpellingQuizView({
             <input
               type="text"
               autoFocus
+              autoComplete="off"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              onContextMenu={(event) => event.preventDefault()}
               value={input}
               onChange={(e) => onInputChange(e.target.value)}
               placeholder="Type your spelling..."

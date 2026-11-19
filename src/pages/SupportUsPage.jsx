@@ -1,10 +1,11 @@
 import { useEffect, useRef } from "react";
-import { useSearchParams, useNavigate } from "react-router";
-import { HiArrowLeft, HiHandRaised, HiHeart } from "react-icons/hi2";
+import { useSearchParams } from "react-router";
+import { HiHandRaised, HiHeart } from "react-icons/hi2";
 import MinimalFooter from "../components/MinimalFooter";
 import DonateSection from "../components/support/DonateSection";
 import WorkWithUsSection from "../components/support/WorkWithUsSection";
 import { Helmet } from "react-helmet-async";
+import PublicNavbar from "../components/PublicNavbar";
 
 const SUPPORT_TABS = [
   {
@@ -26,7 +27,6 @@ const SUPPORT_TABS = [
 const SUPPORT_TAB_IDS = new Set(SUPPORT_TABS.map(({ id }) => id));
 
 export default function SupportUsPage() {
-  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const requestedTab = searchParams.get("tab");
   // Deep links such as /support-us#volunteer should still open the volunteer tab.
@@ -109,22 +109,7 @@ export default function SupportUsPage() {
 
       <div className="flex min-h-screen flex-col justify-between overflow-x-hidden bg-white text-body-dark">
         {/* Top Header */}
-        <header className="sticky top-0 z-40 border-b border-plum/15 bg-white/80 px-4 py-3.5 backdrop-blur-md sm:px-6 sm:py-4">
-          <div className="mx-auto flex max-w-6xl items-center justify-between">
-            <button
-              type="button"
-              onClick={() => navigate(-1)}
-              className="inline-flex min-h-11 items-center gap-2 px-1 font-semibold text-plum transition hover:text-plum-hover"
-            >
-              <HiArrowLeft className="h-5 w-5 shrink-0" aria-hidden="true" />
-              <span>Go Back</span>
-            </button>
-            <div className="flex items-center gap-2 text-xl font-black tracking-tight text-plum">
-              <span>SpellyCraft</span>
-              <span className="inline-block h-2 w-2 rounded-full bg-plum" aria-hidden="true" />
-            </div>
-          </div>
-        </header>
+        <PublicNavbar />
 
         <main className="mx-auto w-full max-w-6xl flex-1 animate-slide-up space-y-6 px-4 py-8 sm:space-y-8 sm:px-6 sm:py-12">
           {/* Hero */}

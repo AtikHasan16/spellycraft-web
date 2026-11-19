@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { Link } from "react-router";
 import emailjs from "@emailjs/browser";
-import { HiArrowLeft, HiPaperAirplane, HiCheckCircle } from "react-icons/hi2";
+import { HiPaperAirplane, HiCheckCircle } from "react-icons/hi2";
 import { showErrorAlert, showSuccessToast } from "../utils/sweetalert";
 import MinimalFooter from "../components/MinimalFooter";
+import PublicNavbar from "../components/PublicNavbar";
 
 const TARGET_GMAIL = "info@spellycraft.com";
 
@@ -146,19 +147,7 @@ export default function ContactPage() {
 
   return (
     <div className="min-h-screen bg-white flex flex-col justify-between selection:bg-plum/20 selection:text-plum">
-      {/* Header */}
-      <header className="border-b border-plum/15 bg-white/90 backdrop-blur-md sticky top-0 z-30">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 h-18 flex items-center justify-between">
-          <Link
-            to="/"
-            className="flex items-center space-x-2 text-plum hover:text-plum-hover font-semibold transition text-base"
-          >
-            <HiArrowLeft className="w-5 h-5" />
-            <span>Back to Home</span>
-          </Link>
-          <div className="text-xl font-black text-plum tracking-tight">SpellyCraft</div>
-        </div>
-      </header>
+      <PublicNavbar />
 
       {/* Main Content */}
       <main className="max-w-2xl mx-auto px-4 sm:px-6 py-12 sm:py-16 w-full space-y-8">

@@ -7,7 +7,7 @@ export default function NotFoundPage() {
     <div className="min-h-screen bg-white flex flex-col justify-between selection:bg-plum/20 selection:text-plum">
       {/* Header */}
       <header className="border-b border-plum/15 bg-white/90 backdrop-blur-md sticky top-0 z-30">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 h-18 flex items-center justify-between">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-18 flex items-center justify-between">
           <Link
             to="/"
             className="flex items-center space-x-2 text-plum hover:text-plum-hover font-semibold transition text-base"
@@ -33,7 +33,8 @@ export default function NotFoundPage() {
             Page Not Found
           </h1>
           <p className="text-base sm:text-lg text-muted-label leading-relaxed max-w-md mx-auto">
-            The orthographic resource or study path you are seeking does not exist or may have been moved.
+            The orthographic resource or study path you are seeking does not exist or may
+            have been moved.
           </p>
         </div>
 

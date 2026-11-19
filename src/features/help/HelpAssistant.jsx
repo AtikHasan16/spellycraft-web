@@ -3,7 +3,6 @@ import {
   HiAcademicCap,
   HiArrowLeft,
   HiArrowUpRight,
-  HiBookOpen,
   HiInformationCircle,
   HiPaperAirplane,
   HiXMark,
@@ -56,7 +55,7 @@ function SectionValue({ label, value }) {
   const style = LABEL_STYLES[label?.toLowerCase()] ?? "plain";
 
   if (style === "headline") {
-    return <p className="text-base font-bold text-body-dark">{value}</p>;
+    return <p className="text-base font-normal text-body-dark">{value}</p>;
   }
   if (style === "chips") {
     const items = value
@@ -91,7 +90,7 @@ function FormattedResponse({ text }) {
       {sections.map(({ label, value }, index) => (
         <div key={`${label}-${index}`}>
           {index > 0 && <hr className="my-3 border-plum-border/40" />}
-          {label && (
+          {label && label.toLowerCase() !== "answer" && (
             <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-label">
               {label}
             </p>
@@ -109,9 +108,9 @@ function ChatMessage({ message }) {
   return (
     <div className={`flex ${isAssistant ? "justify-start" : "justify-end"}`}>
       <div
-        className={`max-w-[88%] rounded-2xl px-4 py-3 text-sm leading-6 ${
+        className={`min-w-0 max-w-[88%] rounded-2xl px-4 py-3 text-sm leading-6 wrap-anywhere ${
           isAssistant
-            ? "rounded-bl-md border border-plum-border/60 bg-white text-body-dark shadow-sm"
+            ? "rounded-bl-md border border-plum-border/60 bg-white text-body-dark"
             : "rounded-br-md bg-plum text-white"
         }`}
       >
@@ -140,16 +139,18 @@ function HelpChat({ fullPage = false, onClose }) {
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [showProviderInfo, setShowProviderInfo] = useState(false);
+  const [failedRequest, setFailedRequest] = useState(null);
   const inputRef = useRef(null);
-  const messagesEndRef = useRef(null);
+  const messagesListRef = useRef(null);
 
   useEffect(() => {
-    inputRef.current?.focus();
-  }, []);
+    if (!fullPage) inputRef.current?.focus();
+  }, [fullPage]);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-  }, [messages]);
+    const list = messagesListRef.current;
+    list?.scrollTo({ top: list.scrollHeight, behavior: "smooth" });
+  }, [messages, sending, failedRequest]);
 
   useEffect(() => {
     function handleEscape(event) {
@@ -160,30 +161,38 @@ function HelpChat({ fullPage = false, onClose }) {
     return () => window.removeEventListener("keydown", handleEscape);
   }, [onClose]);
 
-  async function sendMessage(text = draft) {
+  async function sendMessage(text = draft, retry = false) {
     const message = text.trim();
     if (!message || sending) return;
 
-    const topic = classifyHelpTopic(message, messages);
-    setMessages((current) => [
-      ...current,
-      {
-        id: secureRandomUUID(),
-        role: "user",
-        text: message,
-      },
-    ]);
-    setDraft("");
-
-    if (topic === "unsupported") {
+    setFailedRequest(null);
+    if (!retry) {
+      const topic = classifyHelpTopic(message);
       setMessages((current) => [
         ...current,
-        { id: secureRandomUUID(), role: "assistant", ...getHelpAssistantReply(topic) },
+        {
+          id: secureRandomUUID(),
+          role: "user",
+          text: message,
+        },
       ]);
-      return;
+      setDraft("");
+      if (inputRef.current) {
+        inputRef.current.style.height = "auto";
+        inputRef.current.style.overflowY = "hidden";
+      }
+
+      if (topic === "unsupported") {
+        setMessages((current) => [
+          ...current,
+          { id: secureRandomUUID(), role: "assistant", ...getHelpAssistantReply(topic) },
+        ]);
+        return;
+      }
     }
 
-    const context = messages
+    const contextMessages = retry ? messages.slice(0, -1) : messages;
+    const context = contextMessages
       .slice(-6)
       .map(({ role, text: content }) => ({ role, content }));
     setSending(true);
@@ -198,16 +207,12 @@ function HelpChat({ fullPage = false, onClose }) {
       ]);
     } catch (error) {
       console.error("Could not get a help assistant response:", error);
-      setMessages((current) => [
-        ...current,
-        {
-          id: secureRandomUUID(),
-          role: "assistant",
-          text:
-            error.message ||
-            "The assistant is temporarily unavailable. Please try again shortly.",
-        },
-      ]);
+      setFailedRequest({
+        text: message,
+        error:
+          error.message ||
+          "The assistant is temporarily unavailable. Please try again shortly.",
+      });
     } finally {
       setSending(false);
     }
@@ -215,14 +220,14 @@ function HelpChat({ fullPage = false, onClose }) {
 
   return (
     <section
-      className={`flex min-h-0 flex-col overflow-hidden border border-plum-border/70 bg-white shadow-2xl shadow-body-dark/15 ${
+      className={`imlaa-card flex min-h-0 flex-col overflow-hidden bg-white ${
         fullPage
           ? "h-full rounded-2xl"
           : "h-[min(39rem,calc(100dvh-8rem))] w-[min(30rem,calc(100vw-2rem))] rounded-2xl"
       }`}
       aria-label="SpellyCraft help chat"
     >
-      <header className="flex items-center justify-between gap-3 bg-plum px-4 py-4 text-white">
+      <header className="flex shrink-0 items-center justify-between gap-3 bg-plum px-4 py-4 text-white">
         <div className="flex min-w-0 items-center gap-3">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/15">
             <SiGoogleassistant className="h-6 w-6" aria-hidden="true" />
@@ -260,19 +265,33 @@ function HelpChat({ fullPage = false, onClose }) {
         </div>
       </header>
 
-      <div className="flex items-center gap-2 border-b border-plum-border/40 bg-plum-light px-4 py-2.5 text-xs text-plum">
-        <span className="h-2 w-2 rounded-full bg-emerald-600" aria-hidden="true" />
-        <span>AI help is available for vocabulary, grammar, and platform guidance.</span>
+      <div className="flex shrink-0 items-center justify-between gap-3 border-b border-plum-border/40 bg-plum-light px-4 py-2 text-xs text-plum">
+        <div className="flex min-w-0 items-center gap-2" role="status">
+          <span className="h-2 w-2 shrink-0 rounded-full bg-emerald-600" aria-hidden="true" />
+          <span className="wrap-anywhere">
+            Vocabulary, grammar, and platform help only.
+          </span>
+        </div>
+        <button
+          type="button"
+          onClick={() => setShowProviderInfo(true)}
+          className="inline-flex min-h-11 shrink-0 items-center text-xs text-plum/80 hover:text-plum focus-visible:outline focus-visible:outline-plum"
+          aria-label="Learn more about AI providers and privacy"
+        >
+          Learn more
+          <HiInformationCircle className="ml-1 h-3.5 w-3.5" aria-hidden="true" />
+        </button>
       </div>
 
       <div
-        className="flex-1 space-y-3 overflow-y-auto bg-[#faf9f8] p-4"
+        ref={messagesListRef}
+        className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain bg-[#faf9f8] p-4"
         aria-live="polite"
         aria-relevant="additions text"
       >
         <div className="flex justify-start">
-          <div className="max-w-[88%] rounded-2xl rounded-bl-md border border-plum-border/60 bg-white px-4 py-3 text-sm leading-6 text-body-dark shadow-sm">
-            <p className="font-semibold">Hi, what are you working on?</p>
+          <div className="min-w-0 max-w-[88%] rounded-2xl rounded-bl-md border border-plum-border/60 bg-white px-4 py-3 text-sm leading-6 text-body-dark wrap-anywhere">
+            <p>Hi, what are you working on?</p>
             <p className="mt-1 text-muted-label">
               I can help with English vocabulary, grammar, or finding your way around
               SpellyCraft.
@@ -301,11 +320,30 @@ function HelpChat({ fullPage = false, onClose }) {
             ))}
           </div>
         )}
-        <div ref={messagesEndRef} />
+        {sending && (
+          <div className="flex justify-start" aria-label="Assistant is thinking">
+            <div className="rounded-2xl rounded-bl-md border border-plum-border/60 bg-white px-4 py-3 text-sm text-body-dark">
+              Thinking...
+            </div>
+          </div>
+        )}
+        {failedRequest && (
+          <div className="flex items-center justify-between gap-3 text-xs text-rose-700" role="alert">
+            <span className="wrap-anywhere">{failedRequest.error}</span>
+            <button
+              type="button"
+              onClick={() => sendMessage(failedRequest.text, true)}
+              className="min-h-11 shrink-0 px-2 font-semibold underline underline-offset-2 focus-visible:outline focus-visible:outline-rose-700"
+              disabled={sending}
+            >
+              Retry
+            </button>
+          </div>
+        )}
       </div>
 
       <form
-        className="border-t border-plum-border/40 bg-white p-3"
+        className="shrink-0 border-t border-plum-border/40 bg-white px-3 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]"
         onSubmit={(event) => {
           event.preventDefault();
           sendMessage();
@@ -322,7 +360,13 @@ function HelpChat({ fullPage = false, onClose }) {
             ref={inputRef}
             id={fullPage ? "help-message-full" : "help-message-popup"}
             value={draft}
-            onChange={(event) => setDraft(event.target.value)}
+            onChange={(event) => {
+              const textarea = event.currentTarget;
+              setDraft(textarea.value);
+              textarea.style.height = "auto";
+              textarea.style.height = `${Math.min(textarea.scrollHeight, 144)}px`;
+              textarea.style.overflowY = textarea.scrollHeight > 144 ? "auto" : "hidden";
+            }}
             onKeyDown={(event) => {
               if (event.key === "Enter" && !event.shiftKey) {
                 event.preventDefault();
@@ -332,7 +376,7 @@ function HelpChat({ fullPage = false, onClose }) {
             maxLength={500}
             rows={1}
             placeholder="Ask about vocabulary, grammar, or SpellyCraft…"
-            className="max-h-28 min-h-11 flex-1 resize-y rounded-xl border border-plum-border/60 px-3 py-2.5 text-sm text-body-dark outline-none transition placeholder:text-muted-label/80 focus:border-plum focus:ring-2 focus:ring-plum/15"
+            className="max-h-36 min-h-11 flex-1 resize-none overflow-y-hidden rounded-xl border border-plum-border/60 px-3 py-2.5 text-base leading-6 text-body-dark outline-none transition placeholder:text-muted-label/80 focus:border-plum focus:ring-2 focus:ring-plum/15"
           />
           <button
             type="submit"
@@ -343,25 +387,7 @@ function HelpChat({ fullPage = false, onClose }) {
             <HiPaperAirplane className="h-5 w-5" aria-hidden="true" />
           </button>
         </div>
-        <p className="mt-2 text-center text-xs text-muted-label" role="status">
-          {sending
-            ? "Thinking…"
-            : "Only vocabulary, grammar, and platform guidance are in scope."}
-        </p>
       </form>
-      <div className="border-t border-plum-border/30 bg-white">
-        <div className="flex items-center justify-between px-3 py-2">
-          <button
-            type="button"
-            onClick={() => setShowProviderInfo(true)}
-            className="text-xs font-medium text-plum hover:text-plum-hover focus-visible:outline focus-visible:outline-plum"
-            aria-label="Learn more about AI providers and privacy"
-          >
-            Learn more
-            <HiInformationCircle className="inline h-3.5 w-3.5 ml-1" aria-hidden="true" />
-          </button>
-        </div>
-      </div>
       {showProviderInfo && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4"
@@ -477,9 +503,9 @@ export function HelpAssistantPage() {
   }
 
   return (
-    <main className="min-h-dvh bg-[#f7f5f4] px-3 py-3 sm:px-6 sm:py-6">
-      <div className="mx-auto flex min-h-[calc(100dvh-1.5rem)] max-w-3xl flex-col sm:min-h-[calc(100dvh-3rem)]">
-        <div className="mb-3 flex items-center justify-between gap-3 px-1 sm:mb-5">
+    <main className="h-dvh overflow-hidden bg-[#f7f5f4] px-3 py-3 sm:px-6 sm:py-6">
+      <div className="mx-auto flex h-full min-h-0 max-w-3xl flex-col">
+        <div className="mb-3 flex shrink-0 items-center justify-between gap-3 px-1 sm:mb-5">
           <div className="flex items-center gap-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-plum text-white shadow-sm">
               <HiAcademicCap className="h-6 w-6" aria-hidden="true" />
@@ -502,10 +528,6 @@ export function HelpAssistantPage() {
         <div className="min-h-0 flex-1">
           <HelpChat fullPage />
         </div>
-        <p className="pt-3 text-center text-xs text-muted-label">
-          <HiBookOpen className="mr-1 inline h-3.5 w-3.5" aria-hidden="true" />
-          Vocabulary, grammar, and platform help only.
-        </p>
       </div>
     </main>
   );

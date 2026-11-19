@@ -29,6 +29,8 @@ export default function UserInspector({
   onClose,
   onUpdateRole,
   onDeleteUploadedWord,
+  canDelete = false,
+  canManageRoles = false,
 }) {
   if (!user || typeof document === "undefined") return null;
 
@@ -144,7 +146,7 @@ export default function UserInspector({
               </p>
             )}
           </div>
-          <div className="pt-2 flex flex-wrap items-center gap-2">
+          {canManageRoles && user.email?.toLowerCase() !== "akhasannaeem@gmail.com" && <div className="pt-2 flex flex-wrap items-center gap-2">
             <span className="text-xs font-bold text-body-dark mr-1">
               Quick Permissions:
             </span>
@@ -172,7 +174,7 @@ export default function UserInspector({
             >
               ðŸ›¡ï¸ Promote to Admin
             </button>
-          </div>
+          </div>}
         </div>
 
         <section className="space-y-2">
@@ -359,7 +361,7 @@ export default function UserInspector({
                         ? new Date(word.createdAt).toLocaleDateString()
                         : ""}
                     </span>
-                    <button
+                      {canDelete && <button
                       type="button"
                       onClick={() =>
                         onDeleteUploadedWord(word.id, word.word)
@@ -368,7 +370,7 @@ export default function UserInspector({
                       className="p-1 text-muted-label hover:text-rose-600 hover:bg-rose-50 rounded transition cursor-pointer"
                     >
                       <HiTrash className="w-3.5 h-3.5" />
-                    </button>
+                      </button>}
                   </div>
                 </div>
               ))

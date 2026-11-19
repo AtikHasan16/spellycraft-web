@@ -14,6 +14,9 @@ const VOCAB_STATS = {
     { title: "Science", count: 6 },
   ],
   listeningTopics: [{ title: "Listening Set", count: 2 }],
+  speakingTopics: [{ title: "Speaking Set", count: 3 }],
+  readingTopics: [{ title: "Reading Set", count: 4 }],
+  writingTopics: [{ title: "Writing Set", count: 5 }],
   uploadedTopics: [{ title: "My Upload", count: 5 }],
 };
 
@@ -53,6 +56,7 @@ test("spelling groups prefer local mastery over legacy cloud progress", () => {
     (group) => group.title === "Academic Word List: Sublist A",
   );
   assert.equal(academic.part, "All Active");
+  assert.equal(academic.targetTab, "active");
   assert.equal(academic.masteredCount, 1);
   assert.equal(academic.incorrectCount, 1);
   assert.equal(academic.percent, 10);
@@ -65,6 +69,16 @@ test("spelling groups prefer local mastery over legacy cloud progress", () => {
   const uploaded = groups.find((group) => group.part === "Uploaded");
   // Admins see unattributed uploads as "Admin", regardless of their own name.
   assert.equal(uploaded.uploaderName, "Admin");
+
+  for (const [part, targetTab] of [
+    ["Listening Vocabs", "listening"],
+    ["Speaking Vocabs", "speaking"],
+    ["Reading Vocabs", "reading"],
+    ["Writing Vocabs", "writing"],
+  ]) {
+    assert.equal(groups.find((group) => group.part === part).targetTab, targetTab);
+  }
+  assert.equal(uploaded.targetTab, "uploaded");
 });
 
 test("spelling groups fall back to legacy progress until local results exist", () => {

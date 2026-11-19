@@ -14,10 +14,12 @@ import {
   showErrorAlert,
   showSuccessToast,
 } from "../../utils/sweetalert";
+import { useAuth } from "../../context/AuthContext";
 
 const PAGE_SIZE = 20;
 
 export default function ResourceMonitorTab() {
+  const { isSuperAdmin } = useAuth();
   const [visibility, setVisibility] = useState("public");
   const [resources, setResources] = useState([]);
   const [total, setTotal] = useState(0);
@@ -64,6 +66,7 @@ export default function ResourceMonitorTab() {
   const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   const handleDelete = async (resource) => {
+    if (!isSuperAdmin) return;
     const result = await showConfirmModal({
       title: `Delete "${resource.title}"?`,
       text: "This removes the resource listing from SpellyCraft. The file in Google Drive will not be deleted.",
@@ -158,14 +161,14 @@ export default function ResourceMonitorTab() {
                     >
                       <HiInformationCircle className="h-5 w-5" aria-hidden="true" />
                     </button>
-                    <button
+                    {isSuperAdmin && <button
                       type="button"
                       onClick={() => handleDelete(resource)}
                       className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-rose-200 text-rose-700 hover:bg-rose-50"
                       aria-label={`Delete ${resource.title}`}
                     >
                       <HiTrash className="h-5 w-5" aria-hidden="true" />
-                    </button>
+                    </button>}
                   </div>
                 </td>
               </tr>

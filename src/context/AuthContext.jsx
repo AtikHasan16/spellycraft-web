@@ -17,7 +17,7 @@ export function AuthProvider({ children }) {
     ...usePasswordReset(session),
     ...useAccountActions(session),
   };
-  const permissions = getPermissions(session.role);
+  const permissions = getPermissions(session.role, session.user?.email);
 
   return (
     <AuthContext.Provider

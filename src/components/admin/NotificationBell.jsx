@@ -50,15 +50,8 @@ const CATEGORY_META = {
 export default function NotificationBell({ onNavigate }) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef(null);
-  const {
-    items,
-    unreadCount,
-    loading,
-    error,
-    refresh,
-    markRead,
-    markAllRead,
-  } = useAdminNotifications();
+  const { items, unreadCount, loading, error, refresh, markRead, markAllRead } =
+    useAdminNotifications();
 
   useEffect(() => {
     if (!open) return undefined;
@@ -104,7 +97,7 @@ export default function NotificationBell({ onNavigate }) {
         className="imlaa-btn-secondary relative min-h-11 space-x-1.5 px-2 py-2 text-xs sm:px-4 sm:py-2.5 sm:text-base"
       >
         <HiBell className="h-4 w-4 sm:h-5 sm:w-5" aria-hidden="true" />
-        <span className="hidden sm:inline">Notifications</span>
+
         {unreadCount > 0 && (
           <span className="absolute -right-1.5 -top-1.5 inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-black leading-none text-white ring-2 ring-white">
             {badgeLabel}
@@ -120,9 +113,7 @@ export default function NotificationBell({ onNavigate }) {
         >
           <div className="flex items-start justify-between gap-3 border-b border-plum/10 px-4 py-3">
             <div>
-              <h3 className="text-sm font-black text-body-dark">
-                Notification center
-              </h3>
+              <h3 className="text-sm font-black text-body-dark">Notification center</h3>
               <p className="mt-0.5 text-[11px] text-muted-label">
                 {unreadCount > 0
                   ? `${unreadCount} unread update${unreadCount === 1 ? "" : "s"}`
@@ -175,16 +166,15 @@ export default function NotificationBell({ onNavigate }) {
                   No notifications yet.
                 </p>
                 <p className="max-w-56 text-[11px] text-muted-label">
-                  New volunteer applications, registrations, and community
-                  requests will appear here.
+                  New volunteer applications, registrations, and community requests will
+                  appear here.
                 </p>
               </div>
             ) : (
               <ul className="divide-y divide-plum/10">
                 {items.map((notification) => {
                   const meta =
-                    CATEGORY_META[notification.category] ||
-                    CATEGORY_META.community;
+                    CATEGORY_META[notification.category] || CATEGORY_META.community;
                   const Icon = meta.icon;
                   const unread = !notification.readAt;
                   return (
@@ -246,8 +236,8 @@ export default function NotificationBell({ onNavigate }) {
           </div>
 
           <p className="border-t border-plum/10 bg-plum/5 px-4 py-2 text-[10px] text-muted-label">
-            Updates automatically while the dashboard is open. Click an item to
-            open the related tab.
+            Updates automatically while the dashboard is open. Click an item to open the
+            related tab.
           </p>
         </div>
       )}

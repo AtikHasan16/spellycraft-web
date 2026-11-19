@@ -1,33 +1,14 @@
 import { Link } from "react-router";
 import MinimalFooter from "../components/MinimalFooter";
 import ResourceDirectory from "../components/resources/ResourceDirectory";
+import PublicNavbar from "../components/PublicNavbar";
 
 export default function ResourcesPage() {
   return (
-    <div className="min-h-screen bg-white text-body-dark">
-      <header className="border-b border-plum/10">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
-          <Link to="/" className="text-xl font-black tracking-tight text-plum">
-            SpellyCraft
-          </Link>
-          <div className="flex items-center gap-2">
-            <Link
-              to="/workspace/resources"
-              className="imlaa-btn-secondary inline-flex min-h-11 items-center px-4 text-sm font-semibold"
-            >
-              More free resources
-            </Link>
-            <Link
-              to="/login"
-              className="imlaa-btn-primary inline-flex min-h-11 items-center px-4 text-sm font-bold"
-            >
-              Sign in
-            </Link>
-          </div>
-        </div>
-      </header>
+    <div className="flex min-h-screen flex-col bg-white text-body-dark">
+      <PublicNavbar />
 
-      <main className="mx-auto max-w-6xl space-y-8 px-4 py-10 sm:px-6 sm:py-14">
+      <main className="mx-auto w-full max-w-6xl flex-1 space-y-8 px-4 py-10 sm:px-6 sm:py-14">
         <section className="rounded-3xl border border-plum/15 bg-linear-to-br from-plum/5 via-white to-slate-50 p-6 sm:p-10">
           <p className="text-sm font-bold uppercase tracking-[0.16em] text-plum">
             Free IELTS study library

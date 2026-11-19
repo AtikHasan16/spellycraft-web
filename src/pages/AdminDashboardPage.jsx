@@ -24,7 +24,7 @@ import { showConfirmModal, showSuccessToast, showErrorAlert } from "../utils/swe
 import { exportAuditReportPDF } from "../utils/exportReportPdf";
 
 export default function AdminDashboardPage() {
-  const { user } = useAuth();
+  const { user, isSuperAdmin } = useAuth();
   const [activeTab, setActiveTab] = useState("overview");
   const [auditStats, setAuditStats] = useState({
     totalRegistered: 0,
@@ -138,6 +138,7 @@ export default function AdminDashboardPage() {
 
   // Delete an uploaded word (Admin moderation)
   const handleDeleteUploadedWord = async (wordId, wordText) => {
+    if (!isSuperAdmin) return;
     const res = await showConfirmModal({
       title: "Delete Uploaded Word?",
       text: `Are you sure you want to permanently delete "${wordText}" from uploaded vocabulary?`,
@@ -176,6 +177,7 @@ export default function AdminDashboardPage() {
 
   // Delete single log entry
   const handleDeleteLog = async (logId) => {
+    if (!isSuperAdmin) return;
     const res = await showConfirmModal({
       title: "Delete Log Entry?",
       text: "Are you sure you want to delete this specific audit log event?",
@@ -199,6 +201,7 @@ export default function AdminDashboardPage() {
 
   // Clear all audit logs
   const handleClearAllLogs = async () => {
+    if (!isSuperAdmin) return;
     const res = await showConfirmModal({
       title: "Clear Entire Audit Trail?",
       text: "Are you sure you want to permanently erase all security and audit log entries? This action cannot be reversed.",
@@ -222,6 +225,7 @@ export default function AdminDashboardPage() {
 
   // Change user role (General / Admin) with audit tracking and accept/reject confirmation
   const handleUpdateRole = async (userId, userName, newRole) => {
+    if (!isSuperAdmin) return;
     const roleLabel = newRole === "admin" ? "Platform Administrator" : "General Member";
     const res = await showConfirmModal({
       title: "Confirm Role Change?",
@@ -424,12 +428,14 @@ export default function AdminDashboardPage() {
             adminCount={adminCount}
             onOpenUser={handleOpenUserDetail}
             onUpdateRole={handleUpdateRole}
+            canManageRoles={isSuperAdmin}
           />
 
           <AuditLogTable
             logs={auditLogs}
             onClear={handleClearAllLogs}
             onDelete={handleDeleteLog}
+            canDelete={isSuperAdmin}
           />
           <UserInspector
             user={selectedUser}
@@ -441,7 +447,9 @@ export default function AdminDashboardPage() {
             auditLogs={auditLogs}
             onClose={() => setSelectedUser(null)}
             onUpdateRole={handleUpdateRole}
+            canManageRoles={isSuperAdmin}
             onDeleteUploadedWord={handleDeleteUploadedWord}
+            canDelete={isSuperAdmin}
           />
         </>
       )}
