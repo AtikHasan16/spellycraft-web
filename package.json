@@ -8,7 +8,7 @@
   },
   "scripts": {
     "dev": "vite",
-      "build": "node scripts/generate-sitemap.js && vite build",
+    "build": "node scripts/generate-sitemap.js && vite build",
     "lint": "eslint .",
     "test": "node --test",
     "security:scan": "node scripts/scan-secrets.mjs",
@@ -20,6 +20,7 @@
     "@emailjs/browser": "^5.0.3",
     "@supabase/supabase-js": "^2.118.0",
     "@tailwindcss/vite": "^4.3.3",
+    "@vercel/analytics": "^2.0.1",
     "daisyui": "^5.7.50",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
