@@ -9,6 +9,8 @@ const links = [
   { to: "/contact", label: "Contact" },
   { to: "/workspace/community", label: "Community" },
   { to: "/support-us", label: "Support" },
+  { to: "/terms", label: "Terms of Service" },
+  { to: "/privacy", label: "Privacy Policy" },
 ];
 
 function InstallAppButton() {
