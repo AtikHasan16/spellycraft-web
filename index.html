@@ -1,6 +1,20 @@
 <!doctype html>
 <html lang="en">
   <head>
+    <!-- Google Tag Manager -->
+    <script>
+      (function (w, d, s, l, i) {
+        w[l] = w[l] || [];
+        w[l].push({ "gtm.start": new Date().getTime(), event: "gtm.js" });
+        var firstScript = d.getElementsByTagName(s)[0];
+        var tagScript = d.createElement(s);
+        var layerParam = l !== "dataLayer" ? "&l=" + l : "";
+        tagScript.async = true;
+        tagScript.src = "https://www.googletagmanager.com/gtm.js?id=" + i + layerParam;
+        firstScript.parentNode.insertBefore(tagScript, firstScript);
+      })(window, document, "script", "dataLayer", "GTM-W6VF546V");
+    </script>
+    <!-- End Google Tag Manager -->
     <meta charset="UTF-8" />
       <link rel="icon" href="/favicon.png" type="image/png" sizes="48x48" />
       <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
@@ -86,6 +100,17 @@
     />
   </head>
   <body>
+    <!-- Google Tag Manager (noscript) -->
+    <noscript>
+      <iframe
+        src="https://www.googletagmanager.com/ns.html?id=GTM-W6VF546V"
+        height="0"
+        width="0"
+        style="display:none;visibility:hidden"
+        title="Google Tag Manager"
+      ></iframe>
+    </noscript>
+    <!-- End Google Tag Manager (noscript) -->
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

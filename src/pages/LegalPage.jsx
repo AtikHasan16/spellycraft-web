@@ -94,9 +94,11 @@ function PrivacyPolicy() {
         </p>
         <p>
           The site uses browser storage for your sign-in session, a profile cache, and
-          preferences such as onboarding state. Vercel Analytics is enabled to measure
-          site usage. The browser and hosting providers may also process technical
-          request data needed to deliver and protect the site.
+          preferences such as onboarding state. Vercel Analytics measures site usage.
+          Google Tag Manager loads tags configured by SpellyCraft; depending on those
+          tags, Google or other providers may receive page interaction or device data
+          and use cookies or similar storage. The browser and hosting providers may also
+          process technical request data needed to deliver and protect the site.
         </p>
       </Section>
       <Section title="How information is used and shared">
