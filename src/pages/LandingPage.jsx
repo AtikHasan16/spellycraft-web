@@ -307,11 +307,12 @@ export default function LandingPage() {
                 <span className="h-2 w-2 rounded-full bg-emerald-500" />
                 Free IELTS vocabulary and spelling practice
               </p>
-              <h1 className="mt-5 text-4xl font-black leading-[1.08] tracking-tight text-body-dark sm:text-5xl lg:text-6xl">
-                Learn with 2,000+ words, clear natural audio, and interactive spelling checks.
+              <h1 className="mt-5 text-3xl font-black leading-[1.08] tracking-tight text-body-dark sm:text-4xl lg:text-5xl uppercase">
+                Explore 2,000+ words with audio and spelling practice.
               </h1>
               <p className="mt-5 max-w-xl text-lg leading-relaxed text-muted-label sm:text-xl">
-                Explore a growing vocabulary library with clear pronunciation audio for every word, then build confidence with focused spelling practice.
+                Explore a growing vocabulary library with clear pronunciation audio for
+                every word, then build confidence with focused spelling practice.
               </p>
               <p className="mt-3 max-w-xl leading-relaxed text-body-dark/80">
                 All learning features are free, with no subscription required.

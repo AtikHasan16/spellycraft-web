@@ -101,7 +101,7 @@ export default function PublicNavbar() {
       <header
         className={`fixed left-1/2 top-3 z-40 w-full max-w-6xl -translate-x-1/2 px-4 transition-transform duration-300 sm:px-6 ${visible ? "translate-y-0" : "translate-y-[-150%]"}`}
       >
-        <div className="rounded-2xl border border-plum/15 bg-white/95 shadow-md backdrop-blur-md">
+        <div className="rounded-2xl border border-plum/45 bg-white/70 shadow-md backdrop-blur-xs">
           <div className="flex min-h-18 items-center justify-between gap-4 px-4 sm:px-6">
             <Logo></Logo>
             <nav

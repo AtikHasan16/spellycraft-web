@@ -1,4 +1,6 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router";
+import { HiArrowDownTray } from "react-icons/hi2";
 import Logo from "./Logo";
 
 const links = [
@@ -8,6 +10,78 @@ const links = [
   { to: "/workspace/community", label: "Community" },
   { to: "/support-us", label: "Support" },
 ];
+
+function InstallAppButton() {
+  const [installPrompt, setInstallPrompt] = useState(null);
+  const [installed, setInstalled] = useState(false);
+  const [showInstructions, setShowInstructions] = useState(false);
+
+  useEffect(() => {
+    const onBeforeInstallPrompt = (event) => {
+      event.preventDefault();
+      setInstallPrompt(event);
+    };
+    const onAppInstalled = () => {
+      setInstalled(true);
+      setInstallPrompt(null);
+    };
+    const standalone = window.matchMedia("(display-mode: standalone)");
+    const onDisplayModeChange = () => setInstalled(standalone.matches);
+
+    setInstalled(standalone.matches || window.navigator.standalone === true);
+    window.addEventListener("beforeinstallprompt", onBeforeInstallPrompt);
+    window.addEventListener("appinstalled", onAppInstalled);
+    standalone.addEventListener?.("change", onDisplayModeChange);
+
+    return () => {
+      window.removeEventListener("beforeinstallprompt", onBeforeInstallPrompt);
+      window.removeEventListener("appinstalled", onAppInstalled);
+      standalone.removeEventListener?.("change", onDisplayModeChange);
+    };
+  }, []);
+
+  const handleInstall = async () => {
+    if (!installPrompt) {
+      setShowInstructions(true);
+      return;
+    }
+
+    try {
+      await installPrompt.prompt();
+      const { outcome } = await installPrompt.userChoice;
+      if (outcome === "dismissed") setShowInstructions(true);
+    } catch {
+      setShowInstructions(true);
+    } finally {
+      setInstallPrompt(null);
+    }
+  };
+
+  if (installed) return null;
+
+  const isAppleMobile = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const instructions = isAppleMobile
+    ? "In Safari, tap Share, then Add to Home Screen."
+    : "Use your browser menu and choose Install app or Add to Home screen.";
+
+  return (
+    <div className="flex flex-col items-center gap-1">
+      <button
+        type="button"
+        onClick={handleInstall}
+        className="inline-flex min-h-11 items-center gap-2 rounded-full border border-plum/25 bg-white px-4 text-sm font-semibold text-plum shadow-sm transition hover:bg-plum/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-plum"
+      >
+        <HiArrowDownTray aria-hidden="true" className="h-4 w-4" />
+        Install app
+      </button>
+      {showInstructions && (
+        <p role="status" className="max-w-xs text-center text-xs text-muted-label">
+          {instructions}
+        </p>
+      )}
+    </div>
+  );
+}
 
 export default function MinimalFooter() {
   return (
@@ -29,6 +103,7 @@ export default function MinimalFooter() {
               </Link>
             ))}
           </nav>
+          <InstallAppButton />
         </div>
 
         <div className="my-2 border-t border-plum/10 sm:my-3" />
