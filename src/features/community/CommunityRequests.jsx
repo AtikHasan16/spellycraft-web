@@ -319,13 +319,13 @@ export default function CommunityRequests({
 
       {showForm && isAuthenticated && (
         <div
-          className="fixed inset-0 z-[60] flex items-center justify-center bg-body-dark/45 p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-60 flex items-center justify-center bg-body-dark/45 p-4 backdrop-blur-sm"
           role="presentation"
           onMouseDown={(event) => {
             if (event.target === event.currentTarget) setShowForm(false);
           }}
         >
-          <div role="dialog" aria-modal="true" aria-label="Submit community request" className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-xl bg-white shadow-2xl">
+          <div role="dialog" aria-modal="true" aria-label="Submit community request" className="theme-card max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-xl shadow-2xl">
             <TicketForm
               key={`${openRequestSignal}-${openRequestType}`}
               onClose={() => setShowForm(false)}

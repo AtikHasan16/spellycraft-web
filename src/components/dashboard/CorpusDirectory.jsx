@@ -1,5 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
-import { HiAcademicCap, HiArrowTopRightOnSquare, HiChevronLeft, HiChevronRight, HiCloudArrowUp, HiMagnifyingGlass, HiUser } from "react-icons/hi2";
+import {
+  HiAcademicCap,
+  HiArrowTopRightOnSquare,
+  HiChevronLeft,
+  HiChevronRight,
+  HiCloudArrowUp,
+  HiMagnifyingGlass,
+  HiUser,
+} from "react-icons/hi2";
 import { SearchEmptyState } from "../EmptyState";
 import { SkeletonCorpusGrid } from "../Skeletons";
 
@@ -12,10 +20,11 @@ export default function CorpusDirectory({ corpusList, loading, onUpload, userNam
   const filteredCorpus = useMemo(() => {
     const query = searchQuery.trim().toLocaleLowerCase();
     if (!query) return corpusList;
-    return corpusList.filter((item) =>
-      item.title.toLocaleLowerCase().includes(query) ||
-      item.category.toLocaleLowerCase().includes(query) ||
-      (item.uploaderName && item.uploaderName.toLocaleLowerCase().includes(query)),
+    return corpusList.filter(
+      (item) =>
+        item.title.toLocaleLowerCase().includes(query) ||
+        item.category.toLocaleLowerCase().includes(query) ||
+        (item.uploaderName && item.uploaderName.toLocaleLowerCase().includes(query)),
     );
   }, [corpusList, searchQuery]);
 
@@ -38,7 +47,9 @@ export default function CorpusDirectory({ corpusList, loading, onUpload, userNam
             <h2 className="text-xl font-bold text-body-dark sm:text-2xl">
               Corpus Sets Progress Directory
             </h2>
-            <span className="imlaa-badge text-xs">{corpusList.length} Sets</span>
+            <span className="theme-badge rounded-full px-3 py-1 text-xs font-semibold">
+              {corpusList.length} Sets
+            </span>
           </div>
           <p className="mt-1 text-xs text-muted-label sm:text-sm">
             Detailed breakdown of your curriculum and custom uploaded corpus sets.
@@ -116,16 +127,18 @@ export default function CorpusDirectory({ corpusList, loading, onUpload, userNam
                       <span>Uploaded by {item.uploaderName || userName || "You"}</span>
                     </div>
                   ) : (
-                    <div className="inline-flex items-center space-x-1.5 rounded-md border border-stone-200 bg-white px-2 py-0.5 text-xs font-semibold text-stone-700">
+                    <div className="inline-flex theme-badge items-center space-x-1.5 rounded-md border px-2 py-0.5 text-xs font-semibold ">
                       <HiAcademicCap className="h-3.5 w-3.5 text-plum" />
-                      <span>Curriculum Corpus</span>
+                      <span className="">Curriculum Corpus</span>
                     </div>
                   )}
                 </div>
 
                 <div className="space-y-2 border-t border-plum/10 pt-2">
                   <div className="flex items-center justify-between text-xs text-muted-label">
-                    <span>Progress ({item.masteredCount} / {item.wordsCount} words)</span>
+                    <span>
+                      Progress ({item.masteredCount} / {item.wordsCount} words)
+                    </span>
                     <span className="font-bold text-body-dark">{item.percent}%</span>
                   </div>
                   <div className="h-2 w-full overflow-hidden rounded-full bg-plum/15">
@@ -137,9 +150,13 @@ export default function CorpusDirectory({ corpusList, loading, onUpload, userNam
 
                   <div className="flex items-center justify-between pt-2">
                     {item.mistakesCount > 0 ? (
-                      <span className="text-xs font-bold text-rose-600">{item.mistakesCount} Needs Review</span>
+                      <span className="text-xs font-bold text-rose-600">
+                        {item.mistakesCount} Needs Review
+                      </span>
                     ) : (
-                      <span className="text-xs text-muted-label">{item.wordsCount} Total terms</span>
+                      <span className="text-xs text-muted-label">
+                        {item.wordsCount} Total terms
+                      </span>
                     )}
                     <button
                       type="button"
@@ -161,7 +178,9 @@ export default function CorpusDirectory({ corpusList, loading, onUpload, userNam
               className="flex flex-col items-center justify-between gap-3 border-t border-plum/10 pt-4 sm:flex-row"
             >
               <span aria-live="polite" className="text-sm text-muted-label">
-                Showing {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, filteredCorpus.length)} of {filteredCorpus.length} sets
+                Showing {(page - 1) * PAGE_SIZE + 1}–
+                {Math.min(page * PAGE_SIZE, filteredCorpus.length)} of{" "}
+                {filteredCorpus.length} sets
               </span>
               <div className="flex items-center gap-2">
                 <button

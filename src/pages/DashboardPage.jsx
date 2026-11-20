@@ -608,7 +608,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Metric 4: Active Mistakes Needing Review */}
-          <div className="imlaa-card p-5 sm:p-6 border border-rose-200 bg-rose-50/50 flex flex-col justify-between space-y-4 hover:shadow-md transition">
+          <div className="imlaa-card theme-review-surface p-5 sm:p-6 flex flex-col justify-between space-y-4 hover:shadow-md transition">
             <div className="flex items-center justify-between text-muted-label">
               <span className="text-xs font-bold uppercase tracking-wider text-rose-700">
                 Needs Review
@@ -655,7 +655,7 @@ export default function DashboardPage() {
       {/* 3. Mistakes Action Callout Banner                    */}
       {/* ==================================================== */}
       {metrics.totalMistakesCount > 0 && (
-        <div className="p-5 sm:p-6 rounded-2xl border border-rose-300 bg-rose-50/90 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="theme-review-surface p-5 sm:p-6 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="space-y-1">
             <div className="flex items-center space-x-2 text-rose-800 font-bold text-base sm:text-lg">
               <HiExclamationCircle className="w-5 h-5 shrink-0" />
@@ -675,7 +675,7 @@ export default function DashboardPage() {
               <button
                 type="button"
                 onClick={() => navigate("/workspace/flashcard")}
-                className="px-4 py-2 rounded-xl bg-white border border-rose-300 text-rose-800 hover:bg-rose-100 text-xs sm:text-sm font-bold shadow-2xs transition cursor-pointer min-h-11 flex items-center space-x-1.5 active:scale-95"
+                className="theme-review-button px-4 py-2 rounded-xl text-xs sm:text-sm font-bold shadow-2xs transition cursor-pointer min-h-11 flex items-center space-x-1.5 active:scale-95 hover:brightness-105"
               >
                 <HiBookOpen className="w-4 h-4" />
                 <span>Review Flashcards ({metrics.flashcardMistakesCount})</span>
@@ -686,7 +686,7 @@ export default function DashboardPage() {
               <button
                 type="button"
                 onClick={() => navigate("/workspace/spelling")}
-                className="px-4 py-2 rounded-xl bg-rose-700 text-white hover:bg-rose-800 text-xs sm:text-sm font-bold shadow-xs transition cursor-pointer min-h-11 flex items-center space-x-1.5 active:scale-95"
+                className="theme-review-primary px-4 py-2 rounded-xl text-xs sm:text-sm font-bold shadow-xs transition cursor-pointer min-h-11 flex items-center space-x-1.5 active:scale-95 hover:brightness-110"
               >
                 <HiPencilSquare className="w-4 h-4" />
                 <span>Fix Spelling Errors ({metrics.spellingMistakesCount})</span>
@@ -700,7 +700,7 @@ export default function DashboardPage() {
       {/* Grammar Rule of the Day Spotlight                    */}
       {/* ==================================================== */}
       {dailyGrammar?.lesson && (
-        <div className="imlaa-card p-5 sm:p-6 bg-linear-to-r from-plum/5 via-white to-plum/10 border border-plum/25 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-xs rounded-2xl">
+        <div className="imlaa-card theme-spotlight p-5 sm:p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-xs rounded-2xl">
           <div className="space-y-2 max-w-2xl">
             <div className="flex items-center space-x-2">
               <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-plum text-white flex items-center space-x-1 shadow-xs">
@@ -716,7 +716,7 @@ export default function DashboardPage() {
               {dailyGrammar.lesson.title}
             </h3>
 
-            <div className="p-2.5 rounded-xl bg-white border border-plum/15 text-xs font-mono text-slate-800 tracking-wide overflow-x-auto whitespace-pre-wrap">
+            <div className="theme-code p-2.5 rounded-xl text-xs font-mono tracking-wide overflow-x-auto whitespace-pre-wrap">
               {dailyGrammar.formula}
             </div>
 

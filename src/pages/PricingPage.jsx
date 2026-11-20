@@ -27,7 +27,7 @@ export default function PricingPage() {
           content="SpellyCraft learning tools are free. See what is included and support our mission if you can."
         />
       </Helmet>
-      <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col items-center px-4 py- sm:px-6 sm:py-10">
+      <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col items-center px-4 py-8 sm:px-6 sm:py-10">
         <PublicNavbar />
         <p className="text-sm font-bold uppercase tracking-[0.16em] text-plum">
           Simple pricing
@@ -41,7 +41,7 @@ export default function PricingPage() {
         {/* Free plan features */}
         <section
           aria-label="Free plan features"
-          className="mt-10 w-full max-w-6xl rounded-3xl border border-plum/15 bg-white p-7 shadow-sm sm:p-9"
+          className="theme-card mt-10 w-full max-w-6xl rounded-3xl p-7 shadow-sm sm:p-9"
         >
           <div className="flex items-end justify-between gap-4 border-b border-plum/10 pb-6">
             <div>
@@ -59,7 +59,7 @@ export default function PricingPage() {
             {features.map(([feature, description]) => (
               <li
                 key={feature}
-                className="rounded-2xl border border-plum/10 bg-linear-to-br from-white to-plum/5 p-4"
+                className="theme-card-soft rounded-2xl p-4"
               >
                 <span className="text-plum" aria-hidden="true">
                   ✦

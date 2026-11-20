@@ -110,7 +110,7 @@ function ChatMessage({ message }) {
       <div
         className={`min-w-0 max-w-[88%] rounded-2xl px-4 py-3 text-sm leading-6 wrap-anywhere ${
           isAssistant
-            ? "rounded-bl-md border border-plum-border/60 bg-white text-body-dark"
+            ? "rounded-bl-md theme-card text-body-dark"
             : "rounded-br-md bg-plum text-white"
         }`}
       >
@@ -220,7 +220,7 @@ function HelpChat({ fullPage = false, onClose }) {
 
   return (
     <section
-      className={`imlaa-card flex min-h-0 flex-col overflow-hidden bg-white ${
+      className={`imlaa-card flex min-h-0 flex-col overflow-hidden ${
         fullPage
           ? "h-full rounded-2xl"
           : "h-[min(39rem,calc(100dvh-8rem))] w-[min(30rem,calc(100vw-2rem))] rounded-2xl"
@@ -285,12 +285,12 @@ function HelpChat({ fullPage = false, onClose }) {
 
       <div
         ref={messagesListRef}
-        className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain bg-[#faf9f8] p-4"
+        className="theme-section min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain p-4"
         aria-live="polite"
         aria-relevant="additions text"
       >
         <div className="flex justify-start">
-          <div className="min-w-0 max-w-[88%] rounded-2xl rounded-bl-md border border-plum-border/60 bg-white px-4 py-3 text-sm leading-6 text-body-dark wrap-anywhere">
+          <div className="theme-card min-w-0 max-w-[88%] rounded-2xl rounded-bl-md px-4 py-3 text-sm leading-6 text-body-dark wrap-anywhere">
             <p>Hi, what are you working on?</p>
             <p className="mt-1 text-muted-label">
               I can help with English vocabulary, grammar, or finding your way around
@@ -309,7 +309,7 @@ function HelpChat({ fullPage = false, onClose }) {
                 type="button"
                 onClick={() => sendMessage(prompt)}
                 disabled={sending}
-                className="flex min-h-11 items-center justify-between gap-3 rounded-xl border border-plum-border/50 bg-white px-3 text-left text-sm font-medium text-body-dark transition hover:border-plum/50 hover:bg-plum-light focus-visible:outline focus-visible:outline-plum"
+                className="theme-card flex min-h-11 items-center justify-between gap-3 rounded-xl px-3 text-left text-sm font-medium text-body-dark transition hover:border-plum/50 hover:bg-plum-light focus-visible:outline focus-visible:outline-plum"
               >
                 <span>{label}</span>
                 <HiArrowLeft
@@ -322,7 +322,7 @@ function HelpChat({ fullPage = false, onClose }) {
         )}
         {sending && (
           <div className="flex justify-start" aria-label="Assistant is thinking">
-            <div className="rounded-2xl rounded-bl-md border border-plum-border/60 bg-white px-4 py-3 text-sm text-body-dark">
+            <div className="theme-card rounded-2xl rounded-bl-md px-4 py-3 text-sm text-body-dark">
               Thinking...
             </div>
           </div>
@@ -343,7 +343,7 @@ function HelpChat({ fullPage = false, onClose }) {
       </div>
 
       <form
-        className="shrink-0 border-t border-plum-border/40 bg-white px-3 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]"
+        className="theme-card shrink-0 border-t border-plum-border/40 px-3 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]"
         onSubmit={(event) => {
           event.preventDefault();
           sendMessage();
@@ -376,7 +376,7 @@ function HelpChat({ fullPage = false, onClose }) {
             maxLength={500}
             rows={1}
             placeholder="Ask about vocabulary, grammar, or SpellyCraft…"
-            className="max-h-36 min-h-11 flex-1 resize-none overflow-y-hidden rounded-xl border border-plum-border/60 px-3 py-2.5 text-base leading-6 text-body-dark outline-none transition placeholder:text-muted-label/80 focus:border-plum focus:ring-2 focus:ring-plum/15"
+            className="theme-card max-h-36 min-h-11 flex-1 resize-none overflow-y-hidden rounded-xl px-3 py-2.5 text-base leading-6 text-body-dark outline-none transition placeholder:text-muted-label/80 focus:border-plum focus:ring-2 focus:ring-plum/15"
           />
           <button
             type="submit"
@@ -390,12 +390,12 @@ function HelpChat({ fullPage = false, onClose }) {
       </form>
       {showProviderInfo && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
           role="dialog"
           aria-modal="true"
           aria-labelledby="provider-info-title"
         >
-          <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl">
+          <div className="theme-card w-full max-w-md rounded-2xl p-5 shadow-2xl">
             <div className="flex items-start justify-between">
               <h2 id="provider-info-title" className="text-base font-bold text-body-dark">
                 AI Providers & Privacy
@@ -486,7 +486,7 @@ export default function HelpAssistant() {
         ) : (
           <SiGoogleassistant className="h-6 w-6" aria-hidden="true" />
         )}
-        <span className="pointer-events-none absolute bottom-full right-0 mb-3 hidden whitespace-nowrap rounded-lg bg-body-dark px-3 py-2 text-xs font-medium text-white opacity-0 shadow-lg transition group-hover:opacity-100 md:block">
+        <span className="theme-tooltip pointer-events-none absolute bottom-full right-0 mb-3 hidden whitespace-nowrap rounded-lg px-3 py-2 text-xs font-medium opacity-0 shadow-lg transition group-hover:opacity-100 md:block">
           Ask SpellyCraft
         </span>
       </button>
@@ -503,7 +503,7 @@ export function HelpAssistantPage() {
   }
 
   return (
-    <main className="h-dvh overflow-hidden bg-[#f7f5f4] px-3 py-3 sm:px-6 sm:py-6">
+    <main className="h-dvh overflow-hidden bg-[var(--surface-page)] px-3 py-3 sm:px-6 sm:py-6">
       <div className="mx-auto flex h-full min-h-0 max-w-3xl flex-col">
         <div className="mb-3 flex shrink-0 items-center justify-between gap-3 px-1 sm:mb-5">
           <div className="flex items-center gap-3">
@@ -518,7 +518,7 @@ export function HelpAssistantPage() {
           <button
             type="button"
             onClick={returnToPreviousPage}
-            className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-plum-border/60 bg-white px-3 text-sm font-semibold text-body-dark transition hover:border-plum hover:text-plum focus-visible:outline focus-visible:outline-plum"
+            className="theme-card inline-flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm font-semibold text-body-dark transition hover:border-plum hover:text-plum focus-visible:outline focus-visible:outline-plum"
           >
             <HiArrowLeft className="h-4 w-4" aria-hidden="true" />
             <span className="hidden sm:inline">Back to SpellyCraft</span>

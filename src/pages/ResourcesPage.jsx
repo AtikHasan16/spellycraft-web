@@ -9,7 +9,7 @@ export default function ResourcesPage() {
       <PublicNavbar />
 
       <main className="mx-auto w-full max-w-6xl flex-1 space-y-8 px-4 py-10 sm:px-6 sm:py-14">
-        <section className="rounded-3xl border border-plum/15 bg-linear-to-br from-plum/5 via-white to-slate-50 p-6 sm:p-10">
+        <section className="theme-hero rounded-3xl border border-plum/15 p-6 sm:p-10">
           <p className="text-sm font-bold uppercase tracking-[0.16em] text-plum">
             Free IELTS study library
           </p>
@@ -21,13 +21,13 @@ export default function ResourcesPage() {
             masterlists curated for high-band candidates.
           </p>
           <div className="mt-6 flex flex-wrap items-center gap-3">
-            <span className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-plum shadow-sm">
+            <span className="theme-badge rounded-full px-4 py-2 text-sm font-semibold shadow-sm">
               Academic vocabulary
             </span>
-            <span className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-plum shadow-sm">
+            <span className="theme-badge rounded-full px-4 py-2 text-sm font-semibold shadow-sm">
               English spelling and listening practice
             </span>
-            <span className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-plum shadow-sm">
+            <span className="theme-badge rounded-full px-4 py-2 text-sm font-semibold shadow-sm">
               Lexical mastery workspace
             </span>
           </div>

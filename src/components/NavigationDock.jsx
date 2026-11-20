@@ -131,7 +131,7 @@ export default function NavigationDock() {
           {activeItem.label}
         </div>
 
-        <div className="imlaa-card p-3 flex flex-col items-center space-y-3 shadow-lg border border-plum/20 bg-white rounded-2xl">
+        <div className="imlaa-card theme-floating-panel p-3 flex flex-col items-center space-y-3 shadow-lg rounded-2xl">
           {/* Brand Mark (Mini) */}
           <NavLink
             to="/workspace/dashboard"
@@ -146,7 +146,7 @@ export default function NavigationDock() {
               draggable="false"
             />
             {/* Hover Tooltip */}
-            <span className="absolute left-16 px-3 py-1.5 rounded-lg bg-body-dark text-white text-xs font-semibold whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-150 shadow-md z-50">
+            <span className="theme-tooltip absolute left-16 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-150 shadow-md z-50">
               SpellyCraft
             </span>
           </NavLink>
@@ -177,7 +177,7 @@ export default function NavigationDock() {
                       <>
                         <Icon className="w-6 h-6" />
                         {/* Hover Tooltip */}
-                        <span className="absolute left-16 px-3 py-1.5 rounded-lg bg-body-dark text-white text-xs font-semibold whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-150 shadow-md z-50">
+                        <span className="theme-tooltip absolute left-16 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-150 shadow-md z-50">
                           {item.label}
                         </span>
                         {isActive && (
@@ -220,7 +220,7 @@ export default function NavigationDock() {
                   </div>
                 )}
                 {/* Hover Tooltip */}
-                <span className="absolute left-16 px-3 py-1.5 rounded-lg bg-body-dark text-white text-xs font-semibold whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-150 shadow-md z-50">
+                <span className="theme-tooltip absolute left-16 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-150 shadow-md z-50">
                   Profile ({user?.name || "Candidate"})
                 </span>
                 {isActive && (
@@ -250,7 +250,7 @@ export default function NavigationDock() {
         aria-label="Mobile Bottom Navigation"
         className="md:hidden fixed bottom-2 left-2 right-2 z-50 pointer-events-auto"
       >
-        <div className="imlaa-card px-2 py-1.5 flex items-center justify-around shadow-xl bg-white/95 backdrop-blur-md border border-plum/20 rounded-2xl overflow-x-auto">
+        <div className="imlaa-card theme-floating-panel px-2 py-1.5 flex items-center justify-around shadow-xl backdrop-blur-md rounded-2xl overflow-x-auto">
           {navItems
             .filter((item) => item.show)
             .map((item) => {
