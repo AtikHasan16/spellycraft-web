@@ -105,7 +105,7 @@ function WorkspacePreview() {
 
 function FeatureCard({ icon: Icon, title, description, label }) {
   return (
-    <article className="group rounded-2xl border border-plum/15 bg-white p-6 shadow-sm transition duration-200 hover:-translate-y-1 hover:border-plum/35 hover:shadow-lg">
+    <article className="group theme-card rounded-2xl p-6 shadow-sm transition duration-200 hover:-translate-y-1 hover:border-plum/35 hover:shadow-lg">
       <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-plum/10 text-plum transition group-hover:bg-plum group-hover:text-white">
         <Icon className="h-6 w-6" aria-hidden="true" />
       </div>
@@ -130,7 +130,7 @@ function ComparisonPanel() {
 
   return (
     <div className="grid gap-4 lg:grid-cols-2">
-      <article className="rounded-2xl border border-slate-200 bg-slate-50 p-5 sm:p-7">
+      <article className="theme-card-soft rounded-2xl p-5 sm:p-7">
         <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">
           Passive correction
         </p>
@@ -141,7 +141,7 @@ function ComparisonPanel() {
           An auto-correct can hide a spelling slip before you notice it. The page looks
           right, but the word may not stick.
         </p>
-        <div className="mt-5 rounded-xl border border-slate-200 bg-white p-4">
+        <div className="theme-card mt-5 rounded-xl p-4">
           <label
             htmlFor="passive-example"
             className="text-sm font-semibold text-body-dark"
@@ -161,7 +161,7 @@ function ComparisonPanel() {
         </div>
       </article>
 
-      <article className="rounded-2xl border border-plum/25 bg-plum/5 p-5 sm:p-7">
+      <article className="theme-card-accent rounded-2xl p-5 sm:p-7">
         <p className="text-xs font-bold uppercase tracking-[0.16em] text-plum">
           Active practice
         </p>
@@ -172,7 +172,7 @@ function ComparisonPanel() {
           Hear a word, retrieve its spelling yourself, then review the correction and
           practise it again.
         </p>
-        <div className="mt-5 rounded-xl border border-plum/15 bg-white p-4">
+        <div className="theme-card mt-5 rounded-xl p-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <label
               htmlFor="active-example"
@@ -300,10 +300,10 @@ export default function LandingPage() {
       <PublicNavbar />
 
       <main className="flex-1">
-        <section className="bg-linear-to-br from-[#faf8f7] via-white to-[#f2edef]">
+        <section className="theme-hero">
           <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-12 sm:px-6 sm:py-16 lg:grid-cols-2 lg:gap-12 lg:py-20">
             <div>
-              <p className="inline-flex items-center gap-2 rounded-full border border-plum/15 bg-white px-3 py-1.5 text-xs font-bold uppercase tracking-[0.14em] text-plum shadow-sm">
+              <p className="theme-badge inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-bold uppercase tracking-[0.14em] shadow-sm">
                 <span className="h-2 w-2 rounded-full bg-emerald-500" />
                 Free IELTS vocabulary and spelling practice
               </p>
@@ -353,7 +353,7 @@ export default function LandingPage() {
           <ComparisonPanel />
         </section>
 
-        <section className="bg-[#faf8f7]">
+        <section className="theme-section">
           <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:py-20">
             <div className="max-w-2xl">
               <p className="text-sm font-bold uppercase tracking-[0.16em] text-plum">
@@ -374,7 +374,7 @@ export default function LandingPage() {
         <AuthoritySection />
 
         <section className="px-4 py-16 text-center sm:px-6 lg:py-20">
-          <div className="mx-auto max-w-3xl rounded-3xl border border-plum/15 bg-linear-to-br from-white to-[#f6f1f3] px-5 py-10 shadow-sm sm:px-10 sm:py-14">
+          <div className="theme-spotlight mx-auto max-w-3xl rounded-3xl px-5 py-10 shadow-sm sm:px-10 sm:py-14">
             <HiHeart className="mx-auto h-8 w-8 text-plum" aria-hidden="true" />
             <h2 className="mt-4 text-3xl font-black tracking-tight sm:text-4xl">
               Your next practice session starts here.

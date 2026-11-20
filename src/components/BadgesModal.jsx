@@ -176,7 +176,7 @@ export default function BadgesModal({ isOpen, onClose, userBadges = [] }) {
                   <div
                     className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 transition-transform ${
                       isUnlocked
-                        ? "bg-gradient-to-br from-plum to-plum-hover text-white shadow-xs"
+                        ? "bg-linear-to-br from-plum to-plum-hover text-white shadow-xs"
                         : "bg-slate-200 text-slate-500"
                     }`}
                   >

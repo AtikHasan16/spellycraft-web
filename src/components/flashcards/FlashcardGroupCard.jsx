@@ -22,7 +22,7 @@ export default function FlashcardGroupCard({
   const uploader = group.uploaderName || userName || (isAdmin ? "Admin" : "You");
 
   return (
-    <div className="imlaa-card p-6 flex flex-col justify-between hover:shadow-md transition-all duration-200 border border-plum/20">
+    <div className="imlaa-card p-6 flex flex-col justify-between hover:shadow-md transition-all duration-200 border border-plum/10">
       <div>
         <div className="flex items-center justify-between text-base font-semibold mb-2">
           <span className="text-muted-label font-semibold">
@@ -51,7 +51,7 @@ export default function FlashcardGroupCard({
               <span>Needs Review</span>
             </span>
           ) : (
-            <span className="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-md bg-stone-100 text-stone-700 text-xs font-semibold border border-stone-200">
+            <span className="theme-badge inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-md text-xs font-semibold">
               <HiAcademicCap className="w-3.5 h-3.5 text-plum" />
               <span>Curriculum Corpus</span>
             </span>
